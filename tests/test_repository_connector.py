@@ -151,6 +151,43 @@ def test_dependency_evidence_does_not_retain_non_registry_source_credentials(
     assert "never-store-this" not in str(batch)
 
 
+def test_dependency_evidence_line_ignores_unrelated_package_name_substrings(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "package.json").write_text(
+        "{\n"
+        '  "name": "retail-openai-service",\n'
+        '  "description": "ai",\n'
+        '  "ai": "unrelated top-level configuration",\n'
+        '  "dependencies": {\n'
+        '    "ai": "^5.0.0",\n'
+        '    "openai": "^5.12.0"\n'
+        "  }\n"
+        "}\n"
+    )
+    (tmp_path / "pyproject.toml").write_text(
+        "[project]\n"
+        'name = "openai-proxy"\n'
+        'description = "openai"\n'
+        'dependencies = ["openai>=1.100"]\n'
+    )
+
+    batch = RepositoryConnector(tmp_path, repository_name="github.com/acme/retail").collect()
+    assertions = {
+        (item.asset.natural_key, item.attributes.get("source_path")): item
+        for item in batch.assets
+    }
+
+    assert assertions[("npm:vercel_ai_sdk", "package.json")].evidence.payload["line"] == 6
+    assert (
+        assertions[("dependency:npm:openai", "package.json")].evidence.payload["line"] == 7
+    )
+    assert (
+        assertions[("dependency:pypi:openai", "pyproject.toml")].evidence.payload["line"]
+        == 4
+    )
+
+
 def test_dynamic_model_placeholders_do_not_become_canonical_inventory(
     tmp_path: Path,
 ) -> None:

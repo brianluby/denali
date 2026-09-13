@@ -1394,7 +1394,7 @@ def _dependency_declarations(file_name: str, text: str) -> tuple[DependencyDecla
                         package.lower(),
                         _safe_dependency_constraint(constraint),
                         scope,
-                        _dependency_line(text, package),
+                        _dependency_line(text, package, "npm", section),
                     )
                 )
         return tuple(declarations)
@@ -1473,7 +1473,7 @@ def _python_dependency_list(values: Any, scope: str, text: str) -> list[Dependen
                 package,
                 _safe_dependency_constraint(constraint),
                 scope,
-                _dependency_line(text, match.group("name")),
+                _dependency_line(text, match.group("name"), "pypi"),
             )
         )
     return declarations
@@ -1498,7 +1498,7 @@ def _poetry_dependencies(values: Any, scope: str, text: str) -> list[DependencyD
                 _normalize_python_package(raw_package),
                 _safe_dependency_constraint(constraint),
                 scope,
-                _dependency_line(text, raw_package),
+                _dependency_line(text, raw_package, "pypi"),
             )
         )
     return declarations
@@ -1522,16 +1522,91 @@ def _dependency_spec(ecosystem: str, package: str) -> DependencySpec | None:
     return _NPM_DEPENDENCIES.get(lowered)
 
 
-def _dependency_line(text: str, package: str) -> int:
-    target = package.casefold()
-    return next(
-        (
-            line_number
-            for line_number, line in enumerate(text.splitlines(), 1)
-            if target in line.casefold()
-        ),
-        1,
+def _dependency_line(
+    text: str, package: str, ecosystem: str, manifest_section: str | None = None
+) -> int:
+    escaped = re.escape(package)
+    if ecosystem == "npm":
+        return _json_dependency_line(text, escaped, manifest_section or "dependencies")
+    return _toml_dependency_line(text, escaped)
+
+
+def _json_dependency_line(text: str, escaped_package: str, manifest_section: str) -> int:
+    section_pattern = re.compile(
+        rf'^\s*"{re.escape(manifest_section)}"\s*:\s*\{{', re.IGNORECASE
     )
+    dependency_key = re.compile(rf'"{escaped_package}"\s*:', re.IGNORECASE)
+    in_section = False
+    for line_number, line in enumerate(text.splitlines(), 1):
+        section_match = section_pattern.search(line)
+        if section_match is not None:
+            in_section = True
+            candidate = line[section_match.end() :]
+        elif in_section:
+            candidate = line
+        else:
+            continue
+        if dependency_key.search(candidate):
+            return line_number
+        if re.match(r"^\s*}", candidate):
+            in_section = False
+    return 1
+
+
+def _toml_dependency_line(text: str, escaped_package: str) -> int:
+    section = ""
+    in_dependency_array = False
+    dependency_key = re.compile(
+        rf'^\s*(?:["\']{escaped_package}["\']|{escaped_package})\s*=',
+        re.IGNORECASE,
+    )
+    inline_dependency_key = re.compile(
+        rf'(?:\{{|,)\s*(?:["\']{escaped_package}["\']|{escaped_package})\s*=',
+        re.IGNORECASE,
+    )
+    requirement = re.compile(
+        rf'["\']{escaped_package}(?:\[[^\]]+\])?'
+        rf'(?=\s*(?:===|==|~=|!=|<=|>=|<|>|@|;|["\']))',
+        re.IGNORECASE,
+    )
+    for line_number, line in enumerate(text.splitlines(), 1):
+        header = re.match(r"^\s*\[([^\]]+)]", line)
+        if header is not None:
+            section = header.group(1).strip().casefold()
+            in_dependency_array = False
+            continue
+
+        poetry_dependency_section = section == "tool.poetry.dependencies" or (
+            section.startswith("tool.poetry.group.") and section.endswith(".dependencies")
+        )
+        if poetry_dependency_section and dependency_key.search(line):
+            return line_number
+        if (
+            section == "tool.poetry"
+            and re.match(r"^\s*dependencies\s*=\s*\{", line, re.IGNORECASE)
+            and inline_dependency_key.search(line)
+        ):
+            return line_number
+
+        starts_dependency_array = (
+            section == "project"
+            and re.match(r"^\s*dependencies\s*=\s*\[", line, re.IGNORECASE) is not None
+        ) or (
+            section in {"project.optional-dependencies", "dependency-groups"}
+            and re.match(r"^\s*[^=]+\s*=\s*\[", line) is not None
+        )
+        if starts_dependency_array:
+            in_dependency_array = True
+            candidate = line.split("[", 1)[1]
+        elif in_dependency_array:
+            candidate = line
+        else:
+            continue
+        if requirement.search(candidate):
+            return line_number
+        if "]" in candidate:
+            in_dependency_array = False
+    return 1
 
 
 def _normalize_python_package(value: str) -> str:
