@@ -2,7 +2,7 @@
 
 Date: 2026-09-14
 
-Status: accepted
+Status: accepted and deployed
 
 ## Context
 
@@ -86,3 +86,28 @@ and Azure Monitor [RBAC operations](https://learn.microsoft.com/azure/role-based
   safety over second-level latency.
 - Customers retain responsibility for enabling and governing their own Azure telemetry. Denali is
   a read-only consumer and does not become their observability control plane.
+
+## Production acceptance
+
+Production acceptance completed on 14 September 2026 against the experimental Anna reference
+agent in subscription `8cd2b4cc-c789-466d-a8f7-8f51fb20985d`:
+
+- the hosted Azure setup and validation flow created healthy connection
+  `a9924478-c6de-4893-bce6-c39c1494fc4b` with the runtime plane explicitly selected;
+- a fresh synthetic Anna session emitted one agent request, one model chat, and two tool spans to
+  Application Insights;
+- the five-minute production scheduler created a durable `azure_agent_runtime` job, which
+  completed for one selected subscription and two discovered Application Insights components;
+- Denali retained one provider-neutral session with six normalized activities: two agent, two
+  model, and two tool invocations;
+- every event used `azure_application_insights_foundry_span` evidence, carried
+  `content_policy=metadata_only`, and produced complete
+  `azure_foundry_agent_runtime_activity` coverage; and
+- an aggregate inspection found zero prompt, response, system-instruction, tool-argument,
+  tool-result, request-body, or response-body fields in retained attributes or evidence payloads.
+
+The production Runtime page displayed the `anna-aidr` session, model invocation, and both tool
+calls. Seventeen entity references remained unresolved against independently collected inventory;
+the graph displays them as references and does not manufacture asset identity. The acceptance
+therefore proves collection, persistence, privacy, coverage, and UI presentation, but not complete
+runtime-to-inventory correlation.

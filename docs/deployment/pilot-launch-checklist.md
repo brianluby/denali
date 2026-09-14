@@ -3,7 +3,37 @@
 Use this as the ordered launch-control artifact. Do not skip ahead: the production URL is an
 input to Clerk and provider callbacks, and the Modal URL is an input to Vercel.
 
-## Current checkpoint — 2026-09-01
+## Current checkpoint — 2026-09-14
+
+- [x] Production Vercel and Modal deployments are healthy at the canonical domain and same-origin
+  API boundary.
+- [x] Production uses the Clerk production instance, `denali-production` Modal app, and production
+  Neon database.
+- [x] Apply migrations 001 through `020_azure_foundry_agent_runtime_activity.sql` through the
+  protected deployment workflow.
+- [x] Durable validation, primary provider collection, AWS AgentCore runtime collection, and Azure
+  Foundry runtime collection use PostgreSQL jobs and Modal workers.
+- [x] Azure Repos hosted lifecycle and code-to-cloud acceptance passed on 10 September 2026.
+- [x] Azure Foundry AIDR production acceptance passed on 14 September 2026 with one Anna session,
+  six metadata-only activities, complete coverage, and zero prohibited content fields.
+- [ ] Complete and retain create, setup/callback, validate, collect, disable, and delete evidence
+  for every enabled provider that does not yet have a full dated record.
+- [ ] Complete two-organization isolation testing with non-empty evidence.
+- [ ] Split the Neon runtime and migration roles, enable production alerts/backups, and complete a
+  restore drill.
+
+Production runtime:
+
+```text
+Web:   https://denali.transilience.cloud
+API:   https://transilience-denali-prod--denali-production-api.modal.run
+Neon:  production database; migrations 001 through 020 applied
+```
+
+The Azure Foundry acceptance record is
+[`2026-09-14-azure-foundry-aidr-production-acceptance.md`](../handoffs/2026-09-14-azure-foundry-aidr-production-acceptance.md).
+
+## Historical checkpoint — 2026-09-01
 
 - [x] Hosted multi-tenant application code is implemented and committed.
 - [x] The configured Clerk development publishable key resolves to a live Clerk JWKS endpoint.
@@ -21,7 +51,7 @@ input to Clerk and provider callbacks, and the Modal URL is an input to Vercel.
 - [ ] Complete two-organization Clerk acceptance.
 - [ ] Configure and accept AWS, Azure, Microsoft Entra, GCP, and GitHub individually.
 
-Production runtime:
+Production runtime at that checkpoint:
 
 ```text
 Web:   https://denali.transilience.cloud
@@ -29,7 +59,7 @@ API:   https://transilience-denali-prod--denali-production-api.modal.run
 Neon:  database denali; migrations 001 through 012 applied
 ```
 
-## Prioritized remaining work
+## Prioritized remaining work at that checkpoint
 
 ### P0 — make the empty product useful
 
@@ -55,7 +85,7 @@ Neon:  database denali; migrations 001 through 012 applied
 4. Add the Clerk publishable key to Vercel Development if Vercel-hosted development builds are
    required; Production and Preview are already configured.
 
-Live authenticated smoke acceptance completed on 2026-09-01:
+Live authenticated smoke acceptance recorded on 2026-09-01:
 
 - Clerk sign-in and active organization authorization return `200` from `/v1/context`.
 - AirtelAfrica loads with the admin connection controls.
@@ -258,6 +288,10 @@ DENALI_AZURE_REPOS_CALLBACK_URL=https://<production-domain>/api/v1/connections/a
 - When Azure Repos is enabled, register the callback above, add Azure DevOps delegated `vso.code`
   to the operator application, and have an Azure DevOps administrator add its tenant-local service
   principal as a Basic user with read access only to the selected projects or repositories.
+- When Azure Foundry runtime activity is selected, the customer enables tracing and connects the
+  Foundry project to Application Insights. The existing selected-subscription Reader grant covers
+  component discovery and the read-only query action. Denali projects only allowlisted metadata
+  and does not request prompt, response, system-instruction, or tool payload fields.
 
 #### Google Cloud
 
@@ -314,6 +348,8 @@ DENALI_GITHUB_CALLBACK_URL=https://<production-domain>/api/v1/connections/github
 - [ ] Enable Vercel deployment monitoring, Modal alerts, and Neon database alerts/backups.
 - [ ] Review logs for tenant/job/connection IDs and verify tokens and secrets never appear.
 - [ ] Record the deployed URLs, resource owners, rollback procedure, and acceptance date.
+- [x] Record Azure Foundry AIDR collection, metadata-only privacy, coverage, and Runtime-page
+  presentation against the Anna reference agent on 14 September 2026.
 
 ## Secret summary
 

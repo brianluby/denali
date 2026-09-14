@@ -88,7 +88,7 @@ provider integration secrets belong in Modal Secrets.
 | --- | --- |
 | `src/denali/domain/` | Provider-neutral immutable contracts for inventory, findings, vulnerabilities, activity, detections, issues, and deployment identity. |
 | `src/denali/connectors/` | Bounded collectors and import adapters. Connectors normalize external observations into domain batches and explicit coverage. |
-| `src/denali/connections/` | Self-service AWS, Azure, Microsoft Entra, GCP, and GitHub connection plans, validators, setup artifacts, and credential acquisition boundaries. |
+| `src/denali/connections/` | Self-service AWS, Azure, Microsoft Entra, GCP, Google Workspace, GitHub, and Azure Repos connection plans, validators, setup artifacts, and credential acquisition boundaries. |
 | `src/denali/store/` | PostgreSQL migrations, ingestion, tenant-scoped queries, governance, issue/detection evaluation persistence, connections, setup state, and durable validation jobs. |
 | `src/denali/api/` | FastAPI routes, authentication/authorization, setup callbacks, validation orchestration, response contracts, and hosted/local mode selection. |
 | `src/denali/issues/` | Deterministic cross-evidence issue correlation. |
@@ -145,6 +145,9 @@ scope. It does not prove collection ran, inventory exists, or risk is absent.
 - Microsoft Entra: tenant-bound admin consent for the disclosed Graph application-read bundle.
 - GCP: unique per-connection keyless principal and selected projects/resources.
 - GitHub: GitHub App installation and exact repository selection.
+- Azure Repos: one-time delegated organization proof and exact repository selection followed by
+  app-only, read-only steady-state collection.
+- Google Workspace: domain-wide delegation for one disclosed Admin Reports read scope.
 
 Connection validation is durable in hosted mode. `src/denali/api/validation.py` and migration
 `011_hosted_pilot.sql` implement PostgreSQL jobs, deduplication, leases, bounded terminal state,
@@ -162,10 +165,10 @@ collection run ID, scope key, timestamp, observations, and coverage.
 | Repository source | `repository.py`, `github_repository.py`, `repository_posture.py` | Immutable repository revision, bounded source tree, AI declarations, posture, deployment identifiers, model/tool/action declarations. |
 | Code to cloud | `code_to_cloud.py`, provider deployment modules | Exact source declaration to independently observed workload joins; unmatched and ambiguous candidates remain visible. |
 | AWS AI | `aws_bedrock.py`, `aws_agentcore.py`, `aws_agent_runtime_activity.py`, `aws_stack.py`, `aws_deployments.py` | Bedrock, AgentCore, metadata-only ordered runtime spans, Lambda, ECS, EKS, SageMaker, CloudFormation topology and posture. |
-| Azure | `azure_deployments.py` | Container Apps, Function Apps, AKS, deployment identity and control-plane metadata. |
+| Azure | `azure_deployments.py`, `azure_agent_runtime_activity.py` | Container Apps, Function Apps, AKS, deployment identity and control-plane metadata, plus opt-in metadata-only Azure Foundry agent/model/tool spans from Application Insights. |
 | GCP | `gcp_deployments.py`, `gcp_vertex_activity.py` | Cloud Run, Cloud Run functions Gen2, GKE, Vertex model references, Cloud Audit Log runtime metadata. |
 | Microsoft Entra | `entra_ai.py` | Catalog-matched AI enterprise apps, service principals, grants, app roles, sign-ins, and application-management audits. |
-| Runtime imports | `activity_json.py`, `aws_bedrock_activity.py`, `aws_agent_runtime_activity.py` | Provider-neutral Bedrock, Vertex, Workspace Gemini, and Entra activity plus provider-native AgentCore OpenTelemetry/OpenInference session spans. |
+| Runtime imports | `activity_json.py`, `aws_bedrock_activity.py`, `aws_agent_runtime_activity.py`, `azure_agent_runtime_activity.py` | Provider-neutral Bedrock, Vertex, Workspace Gemini, and Entra activity plus provider-native AgentCore and Azure Foundry OpenTelemetry/OpenInference session spans. |
 | Software supply chain | `syft_json.py`, `grype_json.py` | Component occurrences, scan subject identity, vulnerabilities, fixes, and exact component correlation. |
 | External findings | `ocsf_findings.py` | Scanner-neutral finding import without invented graph identity. |
 | Kubernetes | `kubernetes.py` | Bounded workload identity import shared across EKS, GKE, and AKS. |
@@ -216,6 +219,7 @@ The migration sequence is append-only:
 | `011`–`012` | Hosted tenant mapping, durable validation jobs, and tenant/connection constraints. |
 | `013`–`018` | Durable provider collection, vulnerability evidence, Google Workspace, and Azure Repos jobs. |
 | `019` | AWS AgentCore span/session fields, runtime collection jobs, and approval-gated manual response requests. |
+| `020` | Azure Foundry runtime scope and durable collection-job kind. |
 
 Never edit an applied migration. Add a new numbered migration. `src/denali/store/db.py` runs each
 migration once under a transaction-scoped PostgreSQL advisory lock. Hosted API startup never
@@ -265,7 +269,7 @@ The web application is deliberately small and centralized:
 
 - `main.tsx` initializes Clerk when configured and mounts the application.
 - `App.tsx` owns page composition, shared data loading, drawers, filters, governance controls,
-  connection workflows, and product presentation.
+  connection workflows, the provider-neutral Agent Execution Graph, and product presentation.
 - `api.ts` is the typed same-origin `/api/v1/*` client and attaches Clerk session authorization.
 - `navigation.ts` defines canonical routes and URL-serialized page/filter/drawer/tab state.
 - `presentation.ts` contains evidence-applicability rules that should not live in JSX.
@@ -372,7 +376,7 @@ separately.
 | Vulnerabilities and component identity | [ADR 0006](0006-sbom-first-vulnerability-model.md), [0013](0013-artifact-vulnerability-correlation.md), [0014](0014-package-occurrence-identity.md) |
 | Code-to-cloud semantics | [ADR 0010](0010-evidence-led-code-to-cloud.md), [0023](0023-provider-neutral-deployment-identity.md) |
 | Provider-specific code to cloud | [GCP 0024](0024-gcp-code-to-cloud.md), [Azure 0025](0025-azure-code-to-cloud.md), [AWS 0026](0026-aws-deployment-code-to-cloud.md), [Kubernetes 0027](0027-shared-kubernetes-code-to-cloud.md) |
-| Runtime activity and detections | [ADR 0015](0015-provider-neutral-runtime-activity.md), [0017](0017-evidence-led-runtime-detections.md), [AWS AgentCore AIDR 0035](0035-aws-agentcore-runtime-detection-and-response.md) |
+| Runtime activity and detections | [ADR 0015](0015-provider-neutral-runtime-activity.md), [0017](0017-evidence-led-runtime-detections.md), [AWS AgentCore AIDR 0035](0035-aws-agentcore-runtime-detection-and-response.md), [Azure Foundry AIDR 0036](0036-azure-foundry-runtime-detection-and-response.md) |
 | Entra application discovery | [ADR 0016](0016-entra-shadow-ai-and-runtime.md) |
 | Provider onboarding | [AWS 0018](0018-self-service-aws-connections.md), [Azure 0019](0019-self-service-azure-connections.md), [GCP 0020](0020-self-service-gcp-connections.md), [GitHub 0021](0021-self-service-github-connections.md), [Entra 0029](0029-self-service-entra-connections.md) |
 | Hosted deployment status and next actions | [Pilot checklist](../deployment/pilot-launch-checklist.md) |
@@ -380,8 +384,10 @@ separately.
 
 ## Known architectural gaps
 
-- Hosted provider configuration and live acceptance remain incomplete.
-- Clerk still uses a development instance for the pilot.
+- Full create, setup/callback, validate, collect, disable, and delete evidence remains incomplete
+  for some hosted providers; individual dated acceptance records are authoritative.
+- Azure Foundry runtime collection is production accepted, but the reference session still has
+  unresolved agent, model, tool, and execution-identity references against inventory.
 - The Neon runtime role is not yet split to least privilege and restore operations are untested.
 - Entra sign-in logs depend on tenant licensing and retention; coverage must remain explicit.
 - The local Golden Path is reproducible by manifest and documented collection order, but not yet a
