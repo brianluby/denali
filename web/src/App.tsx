@@ -2418,6 +2418,7 @@ function RuntimeActivityPage({
     "entra_ai_signins",
     "entra_ai_directory_audits",
     "aws_agent_runtime_activity",
+    "azure_foundry_agent_runtime_activity",
   ]);
   const assessed = coverage.some(
     (item) => activityPlanes.has(item.plane) && !item.connector_id.includes("demo"),
@@ -2437,17 +2438,17 @@ function RuntimeActivityPage({
       <button onClick={onToggleFixtures}>{includeFixtures ? "Hide demo data" : "Include demo data"}</button>
     </section>}
     <section className="panel runtime-session-panel">
-      <div className="panel-heading"><div><span className="eyebrow">AWS AGENT EXECUTION GRAPH</span><h3>Agent sessions</h3><p>Ordered provider-native spans correlated to exact agents, models, tools, resources, and detections.</p></div><span className="result-count"><strong>{sessions.length}</strong><small>recent sessions</small></span></div>
-      <div className="runtime-session-table" role="table" aria-label="AWS agent runtime sessions">
+      <div className="panel-heading"><div><span className="eyebrow">AGENT EXECUTION GRAPH</span><h3>Agent sessions</h3><p>Ordered provider-native spans correlated to exact agents, models, tools, resources, and detections.</p></div><span className="result-count"><strong>{sessions.length}</strong><small>recent sessions</small></span></div>
+      <div className="runtime-session-table" role="table" aria-label="Agent runtime sessions">
         <div className="runtime-session-table-head" role="row"><span>Agent session</span><span>Execution</span><span>Calls</span><span>Evidence</span><span>Started</span><span /></div>
         {sessions.map((session) => <button className="runtime-session-row" role="row" key={session.session_key} onClick={() => onOpenSession(session.session_key)}>
-          <span className="runtime-title-cell"><span className="asset-icon violet"><Waypoints /></span><span><strong>{session.agent_names?.join(", ") || "Unresolved AWS agent"}</strong><small>{session.account_uid ?? "AWS account unavailable"} · {session.region ?? "Region unavailable"}</small></span></span>
+          <span className="runtime-title-cell"><span className="asset-icon violet"><Waypoints /></span><span><strong>{session.agent_names?.join(", ") || "Unresolved agent"}</strong><small>{titleCase(session.provider)} · {session.account_uid ?? "Account unavailable"} · {session.region ?? "Region unavailable"}</small></span></span>
           <span><span className={`outcome-badge ${session.outcome}`}>{titleCase(session.outcome)}</span><small>{session.trace_count} {session.trace_count === 1 ? "trace" : "traces"}</small></span>
           <span><strong>{session.tool_invocation_count}</strong><small>{session.model_invocation_count} model · {session.retrieval_count} retrieval</small></span>
           <span><strong>{session.correlated_entity_count}</strong><small>{session.detection_count} {session.detection_count === 1 ? "detection" : "detections"}</small></span>
           <span>{formatTime(session.started_at)}</span><span><ChevronRight size={17} /></span>
         </button>)}
-        {sessions.length === 0 && <div className="empty-state"><Waypoints /><strong>No AWS agent sessions observed yet</strong><span>Enable AgentCore observability and the AgentCore runtime activity scope, then collect evidence.</span></div>}
+        {sessions.length === 0 && <div className="empty-state"><Waypoints /><strong>No agent sessions observed yet</strong><span>Enable metadata-only agent observability and the matching AWS or Azure runtime activity scope, then collect evidence.</span></div>}
       </div>
     </section>
     <section className="panel runtime-panel">
@@ -2514,7 +2515,7 @@ function RuntimeSessionDrawer({
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `denali-aws-session-${sessionKey.slice(0, 12)}.json`;
+      anchor.download = `denali-agent-session-${sessionKey.slice(0, 12)}.json`;
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (cause) {
@@ -2524,9 +2525,9 @@ function RuntimeSessionDrawer({
     }
   };
 
-  return <div className="drawer-layer"><button className="drawer-scrim" onClick={onClose} aria-label="Close agent session" /><aside className="resource-drawer runtime-session-drawer" aria-label="AWS agent session investigation">
+  return <div className="drawer-layer"><button className="drawer-scrim" onClick={onClose} aria-label="Close agent session" /><aside className="resource-drawer runtime-session-drawer" aria-label="Agent session investigation">
     {!detail && !error ? <LoadingState compact /> : error ? <ErrorState message={error} subject="agent session" /> : detail && <>
-      <div className="drawer-header runtime-drawer-header"><button className="drawer-close" onClick={onClose}><X /></button><span className="asset-icon large violet"><Waypoints /></span><div><span>AWS AGENT SESSION</span><h2>{detail.agent_names?.join(", ") || "Unresolved AWS agent"}</h2><p>{detail.account_uid ?? "AWS"} · {detail.region ?? "unknown region"}</p></div><span className={`outcome-badge ${detail.outcome}`}>{titleCase(detail.outcome)}</span></div>
+      <div className="drawer-header runtime-drawer-header"><button className="drawer-close" onClick={onClose}><X /></button><span className="asset-icon large violet"><Waypoints /></span><div><span>{titleCase(detail.provider)} AGENT SESSION</span><h2>{detail.agent_names?.join(", ") || "Unresolved agent"}</h2><p>{detail.account_uid ?? "Account unavailable"} · {detail.region ?? "unknown region"}</p></div><span className={`outcome-badge ${detail.outcome}`}>{titleCase(detail.outcome)}</span></div>
       <div className="finding-summary-strip"><span><strong>{detail.activity_count}</strong> spans</span><span><strong>{detail.tool_invocation_count}</strong> tool calls</span><span><strong>{detail.correlated_entity_count}</strong> correlated entities</span><span><strong>{detail.detection_count}</strong> detections</span></div>
       <div className="drawer-content"><div className="detail-stack">
         <div className="evidence-principle"><ShieldCheck /><div><strong>Metadata-only by design</strong><p>Prompts, responses, retrieved documents, tool arguments, and tool results are not collected. Investigation links preserve exact provider evidence and span order.</p></div><button className="secondary-action" disabled={exporting} onClick={exportEvidence}>{exporting ? <RefreshCw className="spin" /> : <Download />}{exporting ? "Exporting…" : "Export evidence"}</button></div>
@@ -2715,7 +2716,7 @@ function RuntimeResponsePanel({ detail, canWrite, onChanged }: { detail: Runtime
   }
 
   return <DetailSection title="Approval-gated response"><div className="runtime-response-panel">
-    <div className="runtime-response-boundary"><ShieldCheck /><span><strong>Approval is recorded; execution remains manual</strong><small>Denali does not mutate AWS resources in this release. A different organization administrator must approve a proposed action.</small></span></div>
+    <div className="runtime-response-boundary"><ShieldCheck /><span><strong>Approval is recorded; execution remains manual</strong><small>Denali does not mutate cloud resources in this release. A different organization administrator must approve a proposed action.</small></span></div>
     {canWrite && <div className="runtime-response-form"><select value={action} onChange={(event) => { setAction(event.target.value as typeof action); setTarget(""); }}><option value="preserve_and_investigate">Preserve and investigate</option><option value="disable_agent_runtime">Disable agent runtime</option><option value="revoke_tool_access">Revoke tool access</option><option value="block_model">Block model</option><option value="rotate_execution_identity">Rotate execution identity</option></select><select value={target} onChange={(event) => setTarget(event.target.value)}><option value="">{targetKind ? "Select exact linked target" : "No single target"}</option>{eligibleTargets.map((asset) => <option value={asset.id} key={asset.id}>{asset.display_name}</option>)}</select><textarea value={justification} onChange={(event) => setJustification(event.target.value)} maxLength={2000} placeholder="Why is this response proportionate to the linked evidence?" /><button className="primary-action" disabled={busy || !justification.trim() || Boolean(targetKind && !target)} onClick={propose}>Propose response</button></div>}
     {error && <p className="runtime-response-error">{error}</p>}
     <div className="runtime-response-list">{detail.responses.map((response) => <div key={response.id}><span><strong>{titleCase(response.action_type)}</strong><small>{response.target_name ?? "Detection-wide"} · requested {formatTime(response.requested_at)}</small><p>{response.justification}</p></span><span className={`finding-state ${response.state}`}>{titleCase(response.state)}</span>{canWrite && response.state === "awaiting_approval" && <span className="runtime-response-actions"><button disabled={busy} onClick={() => review(response.id, "rejected")}>Reject</button><button disabled={busy} onClick={() => review(response.id, "approved")}>Approve</button></span>}</div>)}{detail.responses.length === 0 && <p className="finding-copy">No response has been proposed. Investigate the evidence before requesting an action.</p>}</div>
@@ -2752,6 +2753,7 @@ const AZURE_CONNECTION_SCOPES = [
   { id: "azure.ai_services", label: "Azure AI services", detail: "AI service accounts and Azure AI Search" },
   { id: "azure.ai_platform", label: "Azure AI platform", detail: "Machine Learning workspaces and Bot Service" },
   { id: "azure.ai_activity", label: "Azure AI management activity", detail: "Subscription Activity Log metadata; no prompts or responses" },
+  { id: "azure.agent_runtime_activity", label: "Foundry agent runtime activity", detail: "Server-side metadata-only Application Insights sessions, model calls, and tool invocations" },
   { id: "azure.code_to_cloud", label: "Code-to-cloud deployments", detail: "Container Apps, Function Apps, and AKS cluster identities, revisions, images, and managed identities" },
 ];
 

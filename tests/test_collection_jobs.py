@@ -6,6 +6,7 @@ import pytest
 
 from denali.api.collection import (
     queue_due_aws_agent_runtime_collections,
+    queue_due_azure_agent_runtime_collections,
     run_durable_collection_job,
 )
 
@@ -90,6 +91,7 @@ def test_collection_job_survives_api_replacement_and_duplicate_worker_delivery()
         "aws_deployments",
         "aws_agent_runtime",
         "azure_deployments",
+        "azure_agent_runtime",
         "entra_ai",
         "gcp_deployments",
         "github_source",
@@ -222,6 +224,14 @@ class RuntimeScheduleRepository:
             {"tenant_id": "tenant-2", "connection_id": "connection-2"},
         ]
 
+    def list_due_azure_agent_runtime_connections(
+        self, *, interval_minutes: int, limit: int
+    ) -> list[dict[str, str]]:
+        self.calls.append((interval_minutes, limit))
+        return [
+            {"tenant_id": "tenant-3", "connection_id": "connection-3"},
+        ]
+
 
 def test_runtime_schedule_only_queues_durable_connection_identifiers() -> None:
     repository = RuntimeScheduleRepository()
@@ -253,3 +263,17 @@ def test_runtime_schedule_isolates_one_dispatch_failure() -> None:
 
     assert queued == ["connection-2"]
     assert result == {"eligible": 2, "queued": 1, "failed": 1}
+
+
+def test_azure_runtime_schedule_only_queues_durable_identifiers() -> None:
+    repository = RuntimeScheduleRepository()
+    queued: list[tuple[str, str]] = []
+
+    result = queue_due_azure_agent_runtime_collections(
+        repository,
+        lambda tenant_id, connection_id: queued.append((tenant_id, connection_id)),
+    )
+
+    assert repository.calls == [(5, 200)]
+    assert queued == [("tenant-3", "connection-3")]
+    assert result == {"eligible": 1, "queued": 1, "failed": 0}

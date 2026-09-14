@@ -163,6 +163,18 @@ def _queue_primary_collection(tenant_id: str, connection_id: str, provider: str)
         if AWS_SCOPE_AGENT_RUNTIME_ACTIVITY in scopes:
             _queue_collection(repository, tenant_id, connection_id, "aws_agent_runtime")
         return
+    if provider == "azure":
+        from denali.connections import AZURE_SCOPE_AGENT_RUNTIME_ACTIVITY
+
+        connection = repository.get_connection_validation_target(tenant_id, connection_id)
+        if connection is None:
+            raise RuntimeError("validated Azure connection is unavailable")
+        scopes = set(connection.get("declared_scopes", []))
+        if scopes - {AZURE_SCOPE_AGENT_RUNTIME_ACTIVITY}:
+            _queue_collection(repository, tenant_id, connection_id, "azure_deployments")
+        if AZURE_SCOPE_AGENT_RUNTIME_ACTIVITY in scopes:
+            _queue_collection(repository, tenant_id, connection_id, "azure_agent_runtime")
+        return
     kind = _PRIMARY_COLLECTION_KINDS.get(provider)
     if kind is None:
         raise RuntimeError("validated provider has no collection workflow")
@@ -188,6 +200,9 @@ def collection_worker(job_id: str) -> None:
         AwsConnectionAgentRuntimeCollector,
     )
     from denali.connectors.aws_deployments import AwsConnectionDeploymentCollector
+    from denali.connectors.azure_agent_runtime_activity import (
+        AzureConnectionAgentRuntimeCollector,
+    )
     from denali.connectors.azure_deployments import AzureConnectionDeploymentCollector
     from denali.connectors.azure_repos_repository import AzureReposRepositoryCollector
     from denali.connectors.entra_connection import EntraConnectionCollector
@@ -208,6 +223,7 @@ def collection_worker(job_id: str) -> None:
             "aws_deployments": AwsConnectionDeploymentCollector(),
             "aws_agent_runtime": AwsConnectionAgentRuntimeCollector(),
             "azure_deployments": AzureConnectionDeploymentCollector(),
+            "azure_agent_runtime": AzureConnectionAgentRuntimeCollector(),
             "entra_ai": EntraConnectionCollector(entra_client) if entra_client else None,
             "gcp_deployments": GcpConnectionDeploymentCollector(),
             "github_source": GitHubRepositoryCollector(github_app) if github_app else None,
@@ -273,6 +289,31 @@ def schedule_aws_agent_runtime_collection() -> dict[str, int]:
         repository,
         lambda tenant_id, connection_id: _queue_collection(
             repository, tenant_id, connection_id, "aws_agent_runtime"
+        ),
+        interval_minutes=5,
+        limit=200,
+    )
+
+
+@app.function(
+    image=image,
+    secrets=runtime_secrets,
+    schedule=modal.Period(minutes=5),
+    timeout=300,
+    retries=0,
+    **_region_options(),
+)
+def schedule_azure_agent_runtime_collection() -> dict[str, int]:
+    """Queue restart-safe Foundry telemetry jobs; never collect in the scheduler."""
+
+    from denali.api.collection import queue_due_azure_agent_runtime_collections
+    from denali.store.repository import PostgresInventoryRepository
+
+    repository = PostgresInventoryRepository(os.environ["DENALI_DSN"])
+    return queue_due_azure_agent_runtime_collections(
+        repository,
+        lambda tenant_id, connection_id: _queue_collection(
+            repository, tenant_id, connection_id, "azure_agent_runtime"
         ),
         interval_minutes=5,
         limit=200,

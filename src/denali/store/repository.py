@@ -771,7 +771,10 @@ class PostgresInventoryRepository:
                 FROM collection_coverage coverage
                 WHERE coverage.tenant_id = %s::uuid
                   AND coverage.connection_id = %s
-                  AND coverage.plane = 'aws_agent_runtime_activity'
+                  AND coverage.plane IN (
+                      'aws_agent_runtime_activity',
+                      'azure_foundry_agent_runtime_activity'
+                  )
                 ORDER BY coverage.connector_id, coverage.connection_id,
                          coverage.plane, coverage.scope, coverage.collected_at DESC
                 """,
@@ -883,7 +886,11 @@ class PostgresInventoryRepository:
                 model_activity_coverage = self._detection_any_coverage_state(
                     connection,
                     tenant_id,
-                    ("vertex_cloud_audit_activity", "aws_agent_runtime_activity"),
+                    (
+                        "vertex_cloud_audit_activity",
+                        "aws_agent_runtime_activity",
+                        "azure_foundry_agent_runtime_activity",
+                    ),
                 )
                 aws_runtime_coverage = self._detection_coverage_state(
                     connection, tenant_id, ("aws_agent_runtime_activity",)
@@ -2832,6 +2839,74 @@ class PostgresInventoryRepository:
                 FROM connection_collection_job
                 WHERE tenant_id = %s::uuid AND connection_id = %s::uuid
                   AND collection_kind = 'aws_agent_runtime'
+                  AND state = 'succeeded'
+                  AND result->>'cursor_advance_safe' = 'true'
+                  AND result ? 'window_end'
+                """,
+                (tenant_id, connection_id),
+            ).fetchone()
+        return row["cursor"] if row is not None else None
+
+    def list_due_azure_agent_runtime_connections(
+        self, *, interval_minutes: int = 5, limit: int = 200
+    ) -> list[dict[str, str]]:
+        """Return bounded identifier-only Azure runtime targets due for collection."""
+
+        if not 1 <= interval_minutes <= 60:
+            raise ValueError("runtime collection interval must be between 1 and 60 minutes")
+        if not 1 <= limit <= 500:
+            raise ValueError("runtime collection target limit must be between 1 and 500")
+        with psycopg.connect(self._dsn, row_factory=dict_row) as connection:
+            rows = connection.execute(
+                """
+                SELECT provider.tenant_id, provider.id AS connection_id
+                FROM provider_connection provider
+                WHERE provider.provider = 'azure'
+                  AND provider.lifecycle_state = 'active'
+                  AND provider.health_state = 'healthy'
+                  AND provider.declared_scopes ? 'azure.agent_runtime_activity'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM connection_collection_job active
+                      WHERE active.tenant_id = provider.tenant_id
+                        AND active.connection_id = provider.id
+                        AND active.collection_kind = 'azure_agent_runtime'
+                        AND active.state IN ('queued', 'running')
+                  )
+                  AND COALESCE((
+                      SELECT max(previous.created_at)
+                      FROM connection_collection_job previous
+                      WHERE previous.tenant_id = provider.tenant_id
+                        AND previous.connection_id = provider.id
+                        AND previous.collection_kind = 'azure_agent_runtime'
+                  ), '-infinity'::timestamptz) <
+                      now() - make_interval(mins => %s)
+                ORDER BY provider.tenant_id, provider.id
+                LIMIT %s
+                """,
+                (interval_minutes, limit + 1),
+            ).fetchall()
+        if len(rows) > limit:
+            raise RuntimeError("runtime collection target boundary exceeds the configured limit")
+        return [
+            {
+                "tenant_id": str(row["tenant_id"]),
+                "connection_id": str(row["connection_id"]),
+            }
+            for row in rows
+        ]
+
+    def latest_azure_agent_runtime_cursor(
+        self, tenant_id: str, connection_id: str
+    ) -> datetime | None:
+        """Return the last Azure runtime window end that is safe to advance."""
+
+        with psycopg.connect(self._dsn, row_factory=dict_row) as connection:
+            row = connection.execute(
+                """
+                SELECT max((result->>'window_end')::timestamptz) AS cursor
+                FROM connection_collection_job
+                WHERE tenant_id = %s::uuid AND connection_id = %s::uuid
+                  AND collection_kind = 'azure_agent_runtime'
                   AND state = 'succeeded'
                   AND result->>'cursor_advance_safe' = 'true'
                   AND result ? 'window_end'

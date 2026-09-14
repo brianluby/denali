@@ -456,6 +456,7 @@ def test_runtime_session_surface_is_bounded_and_tenant_scoped() -> None:
         assert exported.headers["content-disposition"].endswith(
             f'denali-aws-session-{SESSION_KEY[:12]}.json"'
         )
+        assert exported.json()["schema_version"] == "denali.aws_agent_session.v1"
         assert exported.json()["content_policy"] == "metadata_only"
         assert exported.json()["session"]["session_key"] == SESSION_KEY
         assert test_client.get(f"/v1/runtime/sessions/{'b' * 64}").status_code == 404
