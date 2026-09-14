@@ -32,6 +32,7 @@ Status terms in this README are deliberately independent:
 | GCP and Azure code-to-cloud correlation | **Shipped** | **Locally accepted** against independently observed, private scale-to-zero fixtures with exact source identity, PostgreSQL reporting, and browser evidence |
 | AWS Lambda, ECS, EKS, and SageMaker code-to-cloud correlation | **Shipped** | **Locally accepted** against exact live account/Region validation and eight independent deployment collection planes |
 | AWS AgentCore runtime detection and response | **Shipped** | **Pending live acceptance**. Metadata-only CloudWatch span collection, five-minute durable polling, exact session correlation, drift/tool/sequence detections, and manual maker-checker response approval pass automated and PostgreSQL verification; hosted AWS create/update, collect, investigate, and approve remains required |
+| Azure Foundry runtime detection and response | **Shipped** | **Production accepted** on 14 September 2026 against the Anna reference agent: one durable metadata-only session, six agent/model/tool activities, complete Application Insights coverage, and zero prohibited content fields |
 | Shared EKS, GKE, and AKS workload correlation | **Shipped** | **Locally accepted** through a live, control-plane-only EKS fixture with exact workload UID/revision, service-account, image-digest, negative-case, persistence, API, and teardown evidence; GKE and AKS workload identities remain covered by automated contract tests |
 | GitHub source-to-cloud correlation | **Shipped** | **Locally accepted** against two immutable GitHub revisions, with all source/inventory/posture/correlation planes complete and two independently observed runtime links proven |
 | Two-application code-to-cloud Golden Path | **Shipped** | Anna on AWS and Summit on GCP are bounded by a versioned reset/verify manifest with exact source-to-runtime links, declared model/tool/action context, real Vertex activity, Entra discovery context, three image vulnerabilities, two correlated governance issues, and a dedicated dashboard story |
@@ -52,7 +53,8 @@ Denali presents the following product surfaces in the web application and API:
   exact deployment identifiers, preserve unmatched and ambiguous candidates, and keep
   artifact identity separate from unattested source revision claims.
 - Provider-neutral runtime activity plus deterministic, evidence-linked runtime detections,
-  ordered AWS AgentCore session investigations, and approval-gated manual response requests.
+  ordered AWS AgentCore and Azure Foundry session investigations, and approval-gated manual
+  response requests.
 - Source coverage that keeps complete, partial, failed, unsupported, and unknown states
   visible.
 - Stable application routes with direct deep links and browser Back/Forward navigation.
@@ -69,10 +71,10 @@ Implemented collection and import paths include:
 | MCP Streamable HTTP | Initialization and paginated `tools/list` observation without tool invocation |
 | AWS | Bedrock Agents Classic, AgentCore, bounded Lambda/ECS/EKS/SageMaker deployment inventory, CloudFormation-stack inventory and posture, Bedrock management activity from CloudTrail Event History, and metadata-only AgentCore OpenTelemetry/OpenInference spans from CloudWatch Logs |
 | Google Cloud | Cloud Run, Cloud Run functions Gen2, and GKE cluster inventory through Cloud Asset RESOURCE snapshots; Vertex AI audit activity from Cloud Logging |
-| Microsoft Azure | Container Apps, Function Apps, and AKS cluster inventory through Azure Resource Graph with exact Azure code-to-cloud identity; Entra activity remains a separate connector |
+| Microsoft Azure | Container Apps, Function Apps, and AKS cluster inventory through Azure Resource Graph with exact Azure code-to-cloud identity; opt-in, metadata-only Foundry agent/model/tool spans through Application Insights; Entra activity remains a separate connector |
 | Microsoft Entra | AI application, permission, sign-in, and application-management collection through a separate Microsoft Graph connector |
 | External findings and scanners | OCSF findings, Syft SBOMs, and Grype vulnerability reports |
-| Runtime exports | AWS Bedrock CloudTrail, Google Cloud Vertex AI, Google Workspace Gemini, and Microsoft Entra AI sign-in JSON; hosted AgentCore spans use the keyless AWS connection instead of browser upload |
+| Runtime exports | AWS Bedrock CloudTrail, Google Cloud Vertex AI, Google Workspace Gemini, and Microsoft Entra AI sign-in JSON; hosted AgentCore and Azure Foundry spans use their existing keyless or consent-based cloud connections instead of browser upload |
 
 Provider validation and collection remain separate boundaries. A healthy connection does not
 claim that collection ran. GitHub validation reads no source blobs; an explicit collection
@@ -125,7 +127,7 @@ coverage UX without provider credentials. A useful first pass is:
    from composed attack paths.
 3. Compare **Runtime activity** with **Runtime detections**.
 4. Review **Sources** for explicit coverage state.
-5. Open **Connections** to inspect the four shipped onboarding flows. Actions that depend on
+5. Open **Connections** to inspect the shipped onboarding flows. Actions that depend on
    an external operator identity or artifact publisher remain unavailable until configured.
 
 The local Compose runtime uses one configured tenant and has no end-user authentication or
@@ -176,6 +178,9 @@ and evidence limits are documented here:
 - [ADR 0020 — GCP keyless principal and selected projects](docs/architecture/0020-self-service-gcp-connections.md)
 - [ADR 0021 — GitHub App and exact repository boundaries](docs/architecture/0021-self-service-github-connections.md)
 - [ADR 0022 — GitHub immutable source collection](docs/architecture/0022-github-source-collection.md)
+- [ADR 0029 — Microsoft Entra admin-consent onboarding](docs/architecture/0029-self-service-entra-connections.md)
+- [ADR 0033 — Google Workspace domain-wide delegation](docs/architecture/0033-self-service-google-workspace-connections.md)
+- [ADR 0034 — Azure Repos exact-repository onboarding](docs/architecture/0034-self-service-azure-repos-connections.md)
 - [GitHub App registration and operator configuration](docs/deployment/github-app.md)
 
 The latest acceptance records are the
@@ -211,6 +216,7 @@ Start with the product and evidence boundaries, then follow only the slice being
   [Entra AI application discovery and runtime](docs/architecture/0016-entra-shadow-ai-and-runtime.md), and
   [runtime detections](docs/architecture/0017-evidence-led-runtime-detections.md), including
   [AWS AgentCore AIDR](docs/architecture/0035-aws-agentcore-runtime-detection-and-response.md)
+  and [Azure Foundry AIDR](docs/architecture/0036-azure-foundry-runtime-detection-and-response.md)
 
 Product-preview definitions remain available for
 [inventory](docs/product/inventory-preview.md),
@@ -227,16 +233,16 @@ Pending acceptance is not the same as planned implementation:
 
 Documented planned or deferred capabilities are not shipped:
 
+- Complete hosted create, setup/callback, validate, collect, disable, and delete acceptance for
+  every enabled provider; the individual production records remain authoritative.
 - GitHub branch-protection and pull-request posture through a separate, explicitly granted
   Administration-read plane.
-- Live acceptance of GitHub source collection and correlation against selected repositories
-  and independently observed cloud workloads.
 - GitHub installation/repository lifecycle reconciliation and GitHub Enterprise Server.
 - Slack and Jira onboarding after GitHub acceptance.
 - Application-wide typography and clearer elapsed-time context during bounded cloud-IAM
   propagation waits.
-- Automatic collector scheduling after a connection validates; hosted connections still
-  validate access only and existing collectors remain operator-run.
+- Broader exact runtime-to-inventory correlation for provider-native agents, models, tools, and
+  execution identities that currently remain unresolved references.
 
 Prompt- and response-content telemetry is neither shipped nor silently planned into the
 current cloud roles. It remains an explicit product-policy decision that would require

@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted and deployed for the invitation-only pilot on 2026-09-01. The web application,
+Accepted and deployed for the invitation-only pilot on 2026-09-01, with the current production
+schema and runtime updated through migration 020 on 2026-09-14. The web application,
 same-origin API proxy, Clerk Organization authorization, Modal API, durable connection-validation
 worker, durable provider-collection workers, and Neon schema are live. Provider integrations still
 require individual production configuration and hosted acceptance.
@@ -97,6 +98,14 @@ Microsoft Entra evidence, GitHub source, and AWS/Azure/GCP deployment collection
 after the durable job is recorded and dispatched; polling reads PostgreSQL, so completion does not
 depend on the accepting API container remaining alive.
 
+Opt-in AWS AgentCore and Azure Foundry runtime collection use the same durable job and worker
+boundary. Five-minute Modal schedulers select only due, healthy connections, create durable jobs,
+and pass identifiers to the worker. PostgreSQL cursors, bounded overlap, leases, retries, and
+explicit partial coverage preserve continuity without relying on scheduler or API memory. The
+provider-neutral Runtime page reads the retained sessions and ordered execution graph through the
+authenticated, tenant-scoped API. Azure's metadata-only contract and production acceptance are in
+[ADR 0036](0036-azure-foundry-runtime-detection-and-response.md).
+
 ## Database connections and migrations
 
 - `DENALI_DSN` is the pooled Neon endpoint used by the API and workers.
@@ -172,9 +181,9 @@ the same canonical web domain under `/api/v1/connections/...`; they never expose
 as the product callback URL.
 
 The Modal application contains separate functions for the ASGI API, database migration, database
-status, configuration status, validation worker, and collection worker. The pilot keeps a warm API
-container, but correctness must not depend on its lifetime or on requests reaching the same
-container.
+status, configuration status, validation worker, collection worker, and bounded runtime-collection
+schedulers. The pilot keeps a warm API container, but correctness must not depend on its lifetime
+or on requests reaching the same container.
 
 `DENALI_MODAL_REGION`, `DENALI_MODAL_APP_NAME`, `DENALI_MODAL_SECRET_NAME`, and
 `DENALI_MODAL_PROVIDER_SECRET_NAME` are deploy-shell configuration because Modal resolves

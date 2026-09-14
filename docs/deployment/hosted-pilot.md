@@ -7,7 +7,8 @@ The hosted pilot keeps PostgreSQL as Denali's source of truth and separates the 
 
 - Vercel for the static Vite application and same-origin `/api` proxy;
 - Clerk Organizations for identity, membership, and `admin`/`member` roles;
-- Modal for the FastAPI application and durable validation workers;
+- Modal for the FastAPI application, durable validation and collection workers, and bounded
+  runtime schedulers;
 - Neon for managed PostgreSQL.
 
 The canonical architecture and contributor constraints are in
@@ -16,8 +17,10 @@ in [`AGENTS.md`](../../AGENTS.md). All changes and releases follow the
 [protected change and release process](../development/change-and-release-process.md); no code is
 pushed directly to `main`, and production deployment is a separate post-merge action.
 
-Provider connections retain their current boundary: they onboard and validate access. They do
-not schedule or run collectors automatically.
+Provider validation remains separate from collection. Healthy validation queues the first durable
+provider collection, and administrators can request a later refresh. Opted-in AWS AgentCore and
+Azure Foundry runtime planes also have five-minute schedulers that create the same durable
+collection jobs; schedulers never collect inside their own container.
 
 Connection validation and provider collection are durable: the API writes a
 PostgreSQL job and separately spawns the applicable Modal worker. Status polling reads PostgreSQL,
@@ -112,6 +115,13 @@ dispatches the first provider collection; manual collection remains available fo
 or refresh. Successful cloud collection refreshes dependent GitHub correlation and tenant rule
 evaluation as specified by [ADR 0030](../architecture/0030-hosted-evidence-orchestration.md).
 
+AWS AgentCore and Azure Foundry runtime activity use separate five-minute scheduler functions.
+Each scheduler selects only due, healthy, opted-in connections and creates a normal durable
+collection job. The worker resumes from the last safe cursor with a bounded overlap. Azure's first
+run reads 30 minutes and later catch-up is capped at 24 hours. See
+[ADR 0035](../architecture/0035-aws-agentcore-runtime-detection-and-response.md) and
+[ADR 0036](../architecture/0036-azure-foundry-runtime-detection-and-response.md).
+
 After a reviewed release changes validation or collection orchestration, an operator may enqueue a
 bounded refresh of all active connections from the exact deployed `main` revision:
 
@@ -177,6 +187,20 @@ steps:
 The digest must identify the deployed manifest, not merely an image tag or source revision. The
 action automatically requests a fresh cloud collection and retries when the deployment is not yet
 visible to Denali.
+
+### Azure Foundry runtime activity
+
+Azure Foundry runtime activity is an optional scope on the existing Azure connection. The customer
+enables Foundry tracing and connects the project to Application Insights. Denali uses the selected
+subscription's existing Reader grant to discover Application Insights components and query only
+allowlisted metadata. Denali does not enable tracing, change retention, or request prompts,
+responses, system instructions, tool arguments, tool results, request bodies, or response bodies.
+
+Because the first runtime collection reads only the previous 30 minutes, emit a fresh synthetic
+session during acceptance. Confirm the durable job completes, the Runtime page displays the agent,
+model, and tool sequence, coverage is explicit, and every retained activity reports
+`content_policy=metadata_only`. The production reference pass is recorded in the
+[Azure Foundry AIDR acceptance](../handoffs/2026-09-14-azure-foundry-aidr-production-acceptance.md).
 
 ## 4. Configure Vercel and the domain
 
@@ -247,10 +271,14 @@ For two separate Clerk organizations, verify:
 1. organization switching changes `/api/v1/context` and all displayed data;
 2. a member can read but receives `403` for every mutation;
 3. an admin can update governance and operate connections;
-4. AWS, Azure, Microsoft Entra, GCP, and GitHub complete their hosted setup, callback, validation,
-   disable, and delete flows; collection is accepted separately for every enabled collection;
-5. killing an API container does not stop an already spawned validation worker;
-6. Neon restore procedures have been exercised on a non-production branch.
+4. AWS, Azure, Microsoft Entra, GCP, Google Workspace, GitHub, and Azure Repos complete their
+   hosted setup, callback, validation, disable, and delete flows; collection is accepted separately
+   for every enabled collection;
+5. opted-in AWS AgentCore and Azure Foundry runtime planes produce metadata-only sessions with
+   explicit coverage, and retained evidence contains no prompt, response, system-instruction, tool
+   argument, or tool result fields;
+6. killing an API container does not stop an already spawned validation or collection worker;
+7. Neon restore procedures have been exercised on a non-production branch.
 
 Monitor Vercel external-origin errors, Modal function failures/timeouts, Neon connection and
 storage metrics, and validation jobs that remain `running` beyond their lease. Logs may contain
