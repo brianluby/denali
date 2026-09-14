@@ -62,6 +62,7 @@ from denali.connections import (
     AWS_SCOPES,
     AZURE_CLOUD_PUBLIC,
     AZURE_REPOS_SCOPES,
+    AZURE_SCOPE_AGENT_RUNTIME_ACTIVITY,
     AZURE_SCOPES,
     ENTRA_SCOPES,
     GCP_SCOPES,
@@ -95,6 +96,9 @@ from denali.connections.aws import render_cloudformation
 from denali.connections.gcp import valid_gcp_project_id
 from denali.connectors.aws_agent_runtime_activity import AwsConnectionAgentRuntimeCollector
 from denali.connectors.aws_deployments import AwsConnectionDeploymentCollector
+from denali.connectors.azure_agent_runtime_activity import (
+    AzureConnectionAgentRuntimeCollector,
+)
 from denali.connectors.azure_deployments import AzureConnectionDeploymentCollector
 from denali.connectors.azure_repos_repository import AzureReposRepositoryCollector
 from denali.connectors.container_images import normalize_image_digest
@@ -728,6 +732,7 @@ def create_app(
     gcp_principal_provisioner: GcpConnectionPrincipalProvisioner | None = None,
     gcp_setup_launcher: GcpSetupScriptLauncher | None = None,
     azure_deployment_collector: AzureConnectionDeploymentCollector | None = None,
+    azure_agent_runtime_collector: AzureConnectionAgentRuntimeCollector | None = None,
     aws_deployment_collector: AwsConnectionDeploymentCollector | None = None,
     aws_agent_runtime_collector: AwsConnectionAgentRuntimeCollector | None = None,
     gcp_deployment_collector: GcpConnectionDeploymentCollector | None = None,
@@ -847,6 +852,9 @@ def create_app(
         app.state.gcp_setup_launcher = configured_gcp_launcher
         app.state.azure_deployment_collector = (
             azure_deployment_collector or AzureConnectionDeploymentCollector()
+        )
+        app.state.azure_agent_runtime_collector = (
+            azure_agent_runtime_collector or AzureConnectionAgentRuntimeCollector()
         )
         app.state.aws_deployment_collector = (
             aws_deployment_collector or AwsConnectionDeploymentCollector()
@@ -1369,6 +1377,31 @@ def create_app(
             raise HTTPException(
                 status_code=503,
                 detail="durable AWS AgentCore runtime collection storage is unavailable",
+            )
+        return result
+
+    def queue_azure_agent_runtime_collection(
+        request: Request,
+        background_tasks: BackgroundTasks,
+        repo: InventoryReader,
+        current_tenant: str,
+        target: dict[str, Any],
+    ) -> dict[str, str]:
+        result = queue_durable_collection(
+            request,
+            background_tasks,
+            repo,
+            current_tenant,
+            target,
+            collection_kind="azure_agent_runtime",
+            collector=request.app.state.azure_agent_runtime_collector,
+            unavailable_detail="Azure Foundry runtime collection is not configured",
+            dispatch_failure_detail="Unable to dispatch Azure Foundry runtime collection",
+        )
+        if result is None:
+            raise HTTPException(
+                status_code=503,
+                detail="durable Azure Foundry runtime collection storage is unavailable",
             )
         return result
 
@@ -2955,9 +2988,28 @@ def create_app(
                 status_code=409,
                 detail="complete Azure subscription selection before collecting deployments",
             )
-        return queue_azure_deployment_collection(
-            request, background_tasks, repo, current_tenant, target
+        scopes = set(target.get("declared_scopes", []))
+        queued: list[dict[str, str]] = []
+        if scopes - {AZURE_SCOPE_AGENT_RUNTIME_ACTIVITY}:
+            queued.append(
+                queue_azure_deployment_collection(
+                    request, background_tasks, repo, current_tenant, target
+                )
+            )
+        if AZURE_SCOPE_AGENT_RUNTIME_ACTIVITY in scopes:
+            queued.append(
+                queue_azure_agent_runtime_collection(
+                    request, background_tasks, repo, current_tenant, target
+                )
+            )
+        if not queued:
+            raise HTTPException(status_code=409, detail="Azure connection has no collection scope")
+        status = (
+            "already_running"
+            if all(item["status"] == "already_running" for item in queued)
+            else "started"
         )
+        return {"status": status, "connection_id": str(connection_id)}
 
     @app.post(
         "/v1/connections/{connection_id}/gcp/collect-deployments",
@@ -3000,7 +3052,10 @@ def create_app(
                 ("aws_deployments", "AWS evidence"),
                 ("aws_agent_runtime", "AWS runtime"),
             ),
-            "azure": (("azure_deployments", "Azure deployment"),),
+            "azure": (
+                ("azure_deployments", "Azure deployment"),
+                ("azure_agent_runtime", "Azure runtime"),
+            ),
             "entra": (("entra_ai", "evidence"),),
             "gcp": (("gcp_deployments", "GCP deployment"),),
             "github": (("github_source", "source"),),
@@ -3669,8 +3724,13 @@ def create_app(
         row = repo.get_runtime_session(current_tenant, session_key)
         if row is None:
             raise HTTPException(status_code=404, detail="runtime session not found")
+        aws_compatible = row.get("provider") == "aws_agentcore"
         payload = {
-            "schema_version": "denali.aws_agent_session.v1",
+            "schema_version": (
+                "denali.aws_agent_session.v1"
+                if aws_compatible
+                else "denali.agent_session.v1"
+            ),
             "exported_at": datetime.now(UTC),
             "content_policy": "metadata_only",
             "session": row,
@@ -3680,7 +3740,9 @@ def create_app(
             headers={
                 "Cache-Control": "no-store",
                 "Content-Disposition": (
-                    f'attachment; filename="denali-aws-session-{session_key[:12]}.json"'
+                    f'attachment; filename="denali-'
+                    f'{"aws" if aws_compatible else "agent"}-session-'
+                    f'{session_key[:12]}.json"'
                 ),
             },
         )
@@ -3921,14 +3983,15 @@ def _with_validation_state(request: Request, tenant_id: str, row: dict[str, Any]
         )
         result[f"{field_prefix}_collection_state"] = status["state"]
         result[f"last_{field_prefix}_collection"] = status["last_result"]
-        if (
-            result["provider"] == "aws"
-            and "aws.agent_runtime_activity" in result.get("declared_scopes", [])
-        ):
+        runtime_kind = {
+            "aws": ("aws.agent_runtime_activity", "aws_agent_runtime"),
+            "azure": ("azure.agent_runtime_activity", "azure_agent_runtime"),
+        }.get(str(result["provider"]))
+        if runtime_kind and runtime_kind[0] in result.get("declared_scopes", []):
             runtime_status = collection_status(
                 tenant_id,
                 str(result["id"]),
-                collection_kind="aws_agent_runtime",
+                collection_kind=runtime_kind[1],
             )
             result["runtime_collection_state"] = runtime_status["state"]
             result["last_runtime_collection"] = runtime_status["last_result"]

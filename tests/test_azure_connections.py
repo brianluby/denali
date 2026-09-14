@@ -28,6 +28,7 @@ class AzureConnectionRepositoryStub:
     def __init__(self):
         self.targets: dict[str, dict[str, Any]] = {}
         self.rows: dict[str, dict[str, Any]] = {}
+        self.jobs: dict[str, dict[str, Any]] = {}
 
     def create_connection(self, tenant_id: str, **values: Any) -> dict[str, Any]:
         assert tenant_id == DEFAULT_LOCAL_TENANT
@@ -126,6 +127,55 @@ class AzureConnectionRepositoryStub:
         del self.rows[connection_id]
         del self.targets[connection_id]
         return "deleted"
+
+    def create_connection_collection_job(
+        self, tenant_id: str, connection_id: str, *, collection_kind: str
+    ) -> tuple[dict[str, Any], bool]:
+        job = {
+            "id": f"job-{len(self.jobs) + 1}",
+            "tenant_id": tenant_id,
+            "connection_id": connection_id,
+            "collection_kind": collection_kind,
+            "state": "queued",
+            "attempt_count": 0,
+        }
+        self.jobs[job["id"]] = job
+        return job, True
+
+    def claim_connection_collection_job(
+        self, job_id: str, *, lease_seconds: int
+    ) -> dict[str, Any] | None:
+        job = self.jobs[job_id]
+        if job["state"] != "queued":
+            return None
+        job.update(state="running", attempt_count=job["attempt_count"] + 1)
+        return dict(job)
+
+    def complete_connection_collection_job(self, job_id: str, result: dict[str, Any]) -> None:
+        self.jobs[job_id].update(state="succeeded", result=result)
+
+    def record_connection_collection_failure(
+        self, job_id: str, summary: str, *, max_attempts: int
+    ) -> bool:
+        self.jobs[job_id].update(state="failed", result={"state": "failed", "detail": summary})
+        return False
+
+    def connection_collection_status(
+        self, tenant_id: str, connection_id: str, *, collection_kind: str
+    ) -> dict[str, Any]:
+        matches = [
+            item
+            for item in self.jobs.values()
+            if item["tenant_id"] == tenant_id
+            and item["connection_id"] == connection_id
+            and item["collection_kind"] == collection_kind
+        ]
+        active = any(item["state"] in {"queued", "running"} for item in matches)
+        latest = matches[-1] if matches else None
+        return {
+            "state": "running" if active else "idle",
+            "last_result": latest.get("result") if latest and not active else None,
+        }
 
     @staticmethod
     def _safe(target: dict[str, Any]) -> dict[str, Any]:
@@ -229,6 +279,22 @@ class PassingAzureDeploymentCollector:
         }
 
 
+class PassingAzureRuntimeCollector:
+    def collect(
+        self, *, tenant_id: str, connection: dict[str, Any], repository: Any
+    ) -> dict[str, Any]:
+        assert tenant_id == DEFAULT_LOCAL_TENANT
+        return {
+            "state": "complete",
+            "subscriptions": len(connection["configuration"]["subscriptions"]),
+            "components": 1,
+            "activities": 3,
+            "content_policy": "metadata_only",
+            "source_projection": "server_side_allowlist",
+            "cursor_advance_safe": True,
+        }
+
+
 def _completion_code(subscriptions: list[dict[str, str]]) -> str:
     payload = json.dumps(
         {
@@ -259,6 +325,7 @@ def test_azure_setup_enumerates_then_binds_only_selected_subscriptions() -> None
         repository=repository,
         azure_connection_validator=validator,  # type: ignore[arg-type]
         azure_deployment_collector=PassingAzureDeploymentCollector(),  # type: ignore[arg-type]
+        azure_agent_runtime_collector=PassingAzureRuntimeCollector(),  # type: ignore[arg-type]
         azure_setup_launcher=launcher,
         onboarding_validation_retry_seconds=0,
         migrate_on_start=False,
@@ -319,12 +386,13 @@ def test_azure_setup_enumerates_then_binds_only_selected_subscriptions() -> None
         assert refreshed["deployment_collection_state"] == "idle"
         assert refreshed["last_deployment_collection"]["state"] == "complete"
         assert refreshed["last_deployment_collection"]["subscription_count"] == 2
+        assert refreshed["last_runtime_collection"]["activities"] == 3
         detail = client.get(f"/v1/connections/{connection_id}").json()
         assert detail["health_state"] == "healthy"
         assert validator.calls == 2
         assert detail["configuration"]["subscriptions"] == subscriptions
-        assert len(detail["coverage_plan"]) == 8 * len(subscriptions)
-        assert len(detail["last_validation"]["results"]) == 8 * len(subscriptions)
+        assert len(detail["coverage_plan"]) == 9 * len(subscriptions)
+        assert len(detail["last_validation"]["results"]) == 9 * len(subscriptions)
         assert "setup_token" not in json.dumps(detail)
         assert (
             client.post(
@@ -415,9 +483,13 @@ def test_azure_validation_is_subscription_specific_and_all_locations() -> None:
 
     def request(method: str, url: str, **kwargs: Any) -> FakeResponse:
         requests.append((method, url, kwargs))
+        if "api.applicationinsights.io" in url:
+            return FakeResponse({"tables": [{"columns": [], "rows": []}]})
         if "/subscriptions/" in url and "/providers/" not in url:
             subscription_id = url.rsplit("/", 1)[1]
             return FakeResponse({"subscriptionId": subscription_id, "tenantId": TENANT_ID})
+        if "microsoft.insights/components" in kwargs.get("json", {}).get("query", ""):
+            return FakeResponse({"data": [{"appId": CLIENT_ID}]})
         return FakeResponse({"data": []})
 
     validator = AzureConnectionValidator(
@@ -434,8 +506,10 @@ def test_azure_validation_is_subscription_specific_and_all_locations() -> None:
     validation = validator.validate(connection)
     assert validation["health_state"] == "healthy"
     assert validation["credential_state"] == "passed"
-    assert len(validation["results"]) == 16
+    assert len(validation["results"]) == 18
     assert all(item["region"] == "all-locations" for item in validation["results"])
     graph_calls = [item for item in requests if "ResourceGraph" in item[1]]
-    assert len(graph_calls) == 14
+    assert len(graph_calls) == 16
     assert all(len(item[2]["json"]["subscriptions"]) == 1 for item in graph_calls)
+    monitor_calls = [item for item in requests if "api.applicationinsights.io" in item[1]]
+    assert len(monitor_calls) == 2

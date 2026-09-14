@@ -36,6 +36,10 @@ class RuntimeScheduleRepository(Protocol):
         self, *, interval_minutes: int, limit: int
     ) -> list[dict[str, str]]: ...
 
+    def list_due_azure_agent_runtime_connections(
+        self, *, interval_minutes: int, limit: int
+    ) -> list[dict[str, str]]: ...
+
 
 def queue_due_aws_agent_runtime_collections(
     repository: RuntimeScheduleRepository,
@@ -49,6 +53,30 @@ def queue_due_aws_agent_runtime_collections(
     refs = repository.list_due_aws_agent_runtime_connections(
         interval_minutes=interval_minutes, limit=limit
     )
+    return _queue_runtime_refs(refs, queue, collection_kind="aws_agent_runtime")
+
+
+def queue_due_azure_agent_runtime_collections(
+    repository: RuntimeScheduleRepository,
+    queue: Callable[[str, str], None],
+    *,
+    interval_minutes: int = 5,
+    limit: int = 200,
+) -> dict[str, int]:
+    """Dispatch durable jobs for bounded healthy Azure runtime targets."""
+
+    refs = repository.list_due_azure_agent_runtime_connections(
+        interval_minutes=interval_minutes, limit=limit
+    )
+    return _queue_runtime_refs(refs, queue, collection_kind="azure_agent_runtime")
+
+
+def _queue_runtime_refs(
+    refs: list[dict[str, str]],
+    queue: Callable[[str, str], None],
+    *,
+    collection_kind: str,
+) -> dict[str, int]:
     queued = 0
     failed = 0
     for ref in refs:
@@ -58,12 +86,12 @@ def queue_due_aws_agent_runtime_collections(
         except Exception as error:
             failed += 1
             logger.warning(
-                "scheduled AWS runtime collection dispatch failed (%s)",
+                "scheduled runtime collection dispatch failed (%s)",
                 type(error).__name__,
                 extra={
                     "tenant_id": ref["tenant_id"],
                     "connection_id": ref["connection_id"],
-                    "collection_kind": "aws_agent_runtime",
+                    "collection_kind": collection_kind,
                     "error_type": type(error).__name__,
                 },
             )

@@ -295,7 +295,7 @@ export const api = {
     request<RuntimeActivityDetail>(`/v1/activity/${id}`),
   runtimeSessions: () =>
     request<{ items: RuntimeSessionSummary[] }>(
-      "/v1/runtime/sessions?provider=aws_agentcore&limit=200",
+      "/v1/runtime/sessions?limit=200",
     ),
   runtimeSession: (sessionKey: string) =>
     request<RuntimeSessionDetail>(

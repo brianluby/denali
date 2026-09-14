@@ -12,16 +12,20 @@ AZURE_CLOUD_PUBLIC = "AzureCloud"
 AZURE_SCOPE_AI_SERVICES = "azure.ai_services"
 AZURE_SCOPE_AI_PLATFORM = "azure.ai_platform"
 AZURE_SCOPE_AI_ACTIVITY = "azure.ai_activity"
+AZURE_SCOPE_AGENT_RUNTIME_ACTIVITY = "azure.agent_runtime_activity"
 AZURE_SCOPE_CODE_TO_CLOUD = "azure.code_to_cloud"
 AZURE_SCOPES = (
     AZURE_SCOPE_AI_SERVICES,
     AZURE_SCOPE_AI_PLATFORM,
     AZURE_SCOPE_AI_ACTIVITY,
+    AZURE_SCOPE_AGENT_RUNTIME_ACTIVITY,
     AZURE_SCOPE_CODE_TO_CLOUD,
 )
 AZURE_READER_ROLE_DEFINITION_ID = "acdd72a7-3385-48ef-bd42-f606fba81ae7"
 AZURE_MANAGEMENT_SCOPE = "https://management.azure.com/.default"
 AZURE_MANAGEMENT_ENDPOINT = "https://management.azure.com"
+AZURE_APPLICATION_INSIGHTS_SCOPE = "https://api.applicationinsights.io/.default"
+AZURE_APPLICATION_INSIGHTS_ENDPOINT = "https://api.applicationinsights.io"
 AZURE_RESOURCE_GRAPH_API_VERSION = "2022-10-01"
 AZURE_SUBSCRIPTION_API_VERSION = "2022-12-01"
 AZURE_ACTIVITY_API_VERSION = "2015-04-01"
@@ -73,6 +77,17 @@ _SCOPE_METADATA = {
             "label": "Azure AI management activity",
             "permission": "Microsoft.Insights/eventtypes/values/read",
             "query": None,
+        },
+    ),
+    AZURE_SCOPE_AGENT_RUNTIME_ACTIVITY: (
+        {
+            "plane": "azure_foundry_agent_runtime_activity",
+            "label": "Microsoft Foundry hosted-agent runtime activity",
+            "permission": "Microsoft.Insights/components/query/read",
+            "query": (
+                "Resources | where type =~ 'microsoft.insights/components' "
+                "| project id, appId=properties.AppId | take 1"
+            ),
         },
     ),
     AZURE_SCOPE_CODE_TO_CLOUD: (
@@ -174,6 +189,18 @@ class AzureConnectionValidator:
         except Exception as error:
             return _credential_failure(connection, started_at, _azure_error_code(error))
 
+        monitor_headers: dict[str, str] | None = None
+        monitor_error: str | None = None
+        if AZURE_SCOPE_AGENT_RUNTIME_ACTIVITY in connection.get("declared_scopes", []):
+            try:
+                monitor_token = credential.get_token(AZURE_APPLICATION_INSIGHTS_SCOPE).token
+                monitor_headers = {
+                    "Authorization": f"Bearer {monitor_token}",
+                    "Content-Type": "application/json",
+                }
+            except Exception as error:
+                monitor_error = _azure_error_code(error)
+
         results: list[dict[str, Any]] = []
         observed_subscriptions: list[str] = []
         credential_failed = False
@@ -209,7 +236,14 @@ class AzureConnectionValidator:
 
             plans = azure_coverage_plan(connection["declared_scopes"], [subscription])
             results.extend(
-                self._validate_plane(planned, subscription_id, headers) for planned in plans
+                self._validate_plane(
+                    planned,
+                    subscription_id,
+                    headers,
+                    monitor_headers=monitor_headers,
+                    monitor_error=monitor_error,
+                )
+                for planned in plans
             )
 
         failed_count = sum(item["state"] in {"failed", "unknown"} for item in results)
@@ -246,6 +280,9 @@ class AzureConnectionValidator:
         planned: dict[str, Any],
         subscription_id: str,
         headers: dict[str, str],
+        *,
+        monitor_headers: dict[str, str] | None = None,
+        monitor_error: str | None = None,
     ) -> dict[str, Any]:
         result = {
             "scope": planned["scope"],
@@ -257,7 +294,46 @@ class AzureConnectionValidator:
         }
         try:
             metadata = _plane_metadata(planned["declared_scope"], planned["plane"])
-            if metadata["query"] is None:
+            if planned["declared_scope"] == AZURE_SCOPE_AGENT_RUNTIME_ACTIVITY:
+                if monitor_headers is None:
+                    raise AzureBindingError(
+                        f"application_insights_token_{monitor_error or 'unavailable'}"
+                    )
+                graph_response = self._request(
+                    "POST",
+                    f"{AZURE_MANAGEMENT_ENDPOINT}/providers/Microsoft.ResourceGraph/resources",
+                    headers=headers,
+                    params={"api-version": AZURE_RESOURCE_GRAPH_API_VERSION},
+                    json={
+                        "subscriptions": [subscription_id],
+                        "query": metadata["query"],
+                        "options": {"$top": 1, "resultFormat": "objectArray"},
+                    },
+                    timeout=10.0,
+                )
+                graph_response.raise_for_status()
+                graph_payload = graph_response.json()
+                components = (
+                    graph_payload.get("data") if isinstance(graph_payload, dict) else None
+                )
+                if not isinstance(components, list) or not components:
+                    raise AzureBindingError("application_insights_component_not_found")
+                app_id = components[0].get("appId") if isinstance(components[0], dict) else None
+                if not isinstance(app_id, str) or not valid_azure_uuid(app_id):
+                    raise AzureBindingError("application_insights_app_id_invalid")
+                response = self._request(
+                    "GET",
+                    f"{AZURE_APPLICATION_INSIGHTS_ENDPOINT}/v1/apps/{app_id}/query",
+                    headers=monitor_headers,
+                    params={
+                        "query": (
+                            "dependencies | where false "
+                            "| project timestamp, operation_Id | take 1"
+                        )
+                    },
+                    timeout=10.0,
+                )
+            elif metadata["query"] is None:
                 end = datetime.now(UTC)
                 start = end - timedelta(hours=1)
                 response = self._request(
@@ -412,6 +488,24 @@ def authorized_azure_request(customer_tenant_id: str) -> AzureRequest:
         headers = dict(kwargs.pop("headers", {}))
         headers["Authorization"] = (
             f"Bearer {credential.get_token(AZURE_MANAGEMENT_SCOPE).token}"
+        )
+        headers.setdefault("Content-Type", "application/json")
+        return _httpx_request(method, url, headers=headers, **kwargs)
+
+    return request
+
+
+def authorized_azure_monitor_request(customer_tenant_id: str) -> AzureRequest:
+    """Create an Application Insights request callable without exposing bearer tokens."""
+
+    credential = _default_credential(customer_tenant_id)
+
+    def request(method: str, url: str, **kwargs: Any) -> AzureHttpResponse:
+        if not url.startswith(f"{AZURE_APPLICATION_INSIGHTS_ENDPOINT}/v1/apps/"):
+            raise ValueError("Azure Monitor request escaped the Application Insights endpoint")
+        headers = dict(kwargs.pop("headers", {}))
+        headers["Authorization"] = (
+            f"Bearer {credential.get_token(AZURE_APPLICATION_INSIGHTS_SCOPE).token}"
         )
         headers.setdefault("Content-Type", "application/json")
         return _httpx_request(method, url, headers=headers, **kwargs)

@@ -203,7 +203,7 @@ export type Connection = {
   deployment_collection_state?: "idle" | "running";
   last_deployment_collection?: GcpDeploymentCollection | AzureDeploymentCollection | AwsDeploymentCollection | null;
   runtime_collection_state?: "idle" | "running";
-  last_runtime_collection?: AwsAgentRuntimeCollection | null;
+  last_runtime_collection?: AgentRuntimeCollection | null;
   setup_capabilities: {
     cloudformation_quick_create: boolean;
     azure_cloud_shell: boolean;
@@ -373,7 +373,7 @@ export type AwsDeploymentCollection = {
   detail?: string;
 };
 
-export type AwsAgentRuntimeCollection = {
+export type AgentRuntimeCollection = {
   state: "complete" | "partial" | "failed";
   completed_at: string;
   regions?: number;
@@ -383,13 +383,20 @@ export type AwsAgentRuntimeCollection = {
   unresolved_entities?: number;
   partial_regions?: number;
   failed_regions?: number;
+  subscriptions?: number;
+  components?: number;
+  partial_subscriptions?: number;
+  failed_subscriptions?: number;
   window_start?: string;
   window_end?: string;
   content_policy?: "metadata_only";
+  source_projection?: "server_side_allowlist";
   catchup_capped?: boolean;
   cursor_advance_safe?: boolean;
   detail?: string;
 };
+
+export type AwsAgentRuntimeCollection = AgentRuntimeCollection;
 
 export type AwsCloudFormationLaunch = {
   launch_url: string;
