@@ -24,6 +24,9 @@ changing or diagnosing the shared Clerk, Vercel, Modal, or Neon development envi
   only from clean, current `main` after the PR is merged and the user explicitly requests it.
 - Vercel Preview belongs to `denali-dev`; Vercel Production is produced from merged `main` only.
   A preview result is evidence for a PR, never authorization to deploy Modal production.
+- A push to `dev` automatically runs the protected Modal development deployment. Update `dev`
+  only with reviewed revisions intended for the shared development environment. For a Secret-only
+  change, manually dispatch **Deploy Modal development** from `dev` with its exact current SHA.
 - Follow [`CONTRIBUTING.md`](CONTRIBUTING.md) and
   [`docs/development/change-and-release-process.md`](docs/development/change-and-release-process.md)
   for the executable branch, PR, verification, deployment, rollback, and handoff sequence.

@@ -79,12 +79,28 @@ DENALI_MIGRATION_DSN
 used only by the explicit migration function. Both must identify the isolated development
 database and role, never production.
 
-## Safe development deployment
+## Automatic development deployment
 
-A Modal Secret edit does not update an already warm API container. Redeploy `denali-dev` after
-changing Clerk, Neon, CORS, canonical URL, or provider configuration. Run the helper from the
-checkout whose code is meant to become the shared development backend. Never accidentally invoke
-the helper by path while the shell remains in another branch's working directory.
+A push to `dev` starts the **Deploy Modal development** GitHub Actions workflow. It requires the
+exact remote `dev` SHA, runs the complete Python/PostgreSQL/frontend verification gate, enters the
+GitHub `denali-dev` environment, checks configuration, applies migrations, deploys the API and
+workers, and runs direct Modal plus same-origin Vercel smoke checks. Its concurrency group cancels
+an older development deployment when a newer `dev` revision arrives.
+
+The workflow uses repository `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` secrets only to authenticate
+the Modal deployment. Clerk, Neon, and provider values remain in Modal Secrets.
+
+A Modal Secret edit does not update an already warm API container and does not create a Git push.
+After changing Clerk, Neon, CORS, canonical URL, or provider configuration, manually dispatch
+**Deploy Modal development** from the `dev` branch and provide the full SHA currently at
+`origin/dev`. The workflow rejects a different branch or stale SHA.
+
+## Emergency local development deployment
+
+Use the local helper only when GitHub Actions is unavailable. Run it from the checkout whose code
+is meant to become the shared development backend. The helper rejects dirty worktrees and any
+revision that does not exactly match `origin/dev`; invoking its path from another branch does not
+bypass this guard.
 
 The normal shared baseline is the current remote `dev` branch. A disposable worktree makes the
 source revision explicit:
@@ -101,17 +117,17 @@ git worktree remove "$deploy_worktree"
 ```
 
 Before running this sequence, confirm the intended `origin/dev` SHA and record it in the handoff.
-If `dev` is expected to mirror `main`, verify the SHAs match. Do not deploy a closed PR, dirty
-worktree, or unrelated feature branch into the shared environment. Backend feature work that must
-run before merge should use an explicitly isolated Modal environment/app rather than silently
-replacing the shared baseline.
+If `dev` is expected to mirror `main`, verify the SHAs match. Do not deploy a closed PR or unrelated
+feature branch into the shared environment. Backend feature work that must run before merge should
+use an explicitly isolated Modal environment/app rather than silently replacing the shared
+baseline.
 
 The helper runs the migration function under the repository advisory lock and then deploys the
 API and workers. The expected stable API origin is the non-`-dev` URL shown above; the temporary
 `...api-dev.modal.run` URL printed by `modal run` is not a Vercel target.
 
 Redeploy Vercel only when a Vercel variable or frontend revision changes. A Modal Secret-only
-change normally needs a Modal redeploy, not a Vercel rebuild.
+change needs a manually dispatched Modal development workflow, not a Vercel rebuild.
 
 ## Verification after a change
 

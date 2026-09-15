@@ -244,8 +244,9 @@ Shared development environment updated and authenticated on 2026-09-15:
   proxy.
 
 Use the [hosted development environment runbook](../development/hosted-dev-environment.md) for
-future changes. A Modal Secret edit must be followed by a `denali-dev` redeploy so warm containers
-load the new values.
+future changes. A push to `dev` now deploys Modal development automatically. A Modal Secret edit
+must be followed by a manual **Deploy Modal development** workflow dispatch so warm containers load
+the new values.
 
 ### 7. Reconcile the final URL
 
