@@ -56,6 +56,9 @@ fi
         "FAKE_HEAD_SHA": SHA,
         "FAKE_ORIGIN_DEV_SHA": SHA,
     }
+    environment.pop("GITHUB_ACTIONS", None)
+    environment.pop("GITHUB_REF", None)
+    environment.pop("GITHUB_SHA", None)
     environment.update(overrides)
     return environment
 
