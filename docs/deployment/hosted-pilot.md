@@ -92,10 +92,11 @@ export it in the deploy shell (or CI environment); it is not read from the runti
 Set the Secret-name variables in the same deploy environment as the Modal CLI invocation; they are
 not runtime values loaded from a Secret.
 
-Deploy production through the protected **Deploy Modal production** GitHub Actions workflow after
-the reviewed PR is merged. Supply the exact full `main` commit SHA. The workflow re-runs the
-release gate and calls the checked-in script, which validates combined configuration, runs
-migrations and database status, deploys the app, and verifies production health.
+Merging a reviewed PR to `main` automatically starts the protected **Deploy Modal production**
+GitHub Actions workflow for the exact merged SHA. The workflow re-runs the release gate and calls
+the checked-in script, which validates combined configuration, runs migrations and database
+status, deploys the app, and verifies production health. Manually dispatch the workflow with the
+exact current `main` SHA only when an operator-only configuration change needs a redeploy.
 
 The script refuses feature branches, dirty worktrees, stale `main`, and invocations without an
 explicit production flag. It is shown here only for the documented emergency path:

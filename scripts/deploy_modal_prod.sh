@@ -24,11 +24,12 @@ else
     echo "Refusing production deployment from a branch other than main." >&2
     exit 2
   fi
-  git fetch --quiet origin main
-  if [[ "$(git rev-parse origin/main)" != "${head_sha}" ]]; then
-    echo "Refusing production deployment: local main does not match origin/main." >&2
-    exit 2
-  fi
+fi
+
+git fetch --quiet origin main
+if [[ "$(git rev-parse origin/main)" != "${head_sha}" ]]; then
+  echo "Refusing production deployment: checked-out main does not match origin/main." >&2
+  exit 2
 fi
 
 prod_modal_environment="denali-prod"
@@ -44,8 +45,10 @@ modal run --env "${prod_modal_environment}" modal_app.py::migrate_database
 modal run --env "${prod_modal_environment}" modal_app.py::database_status
 modal deploy --env "${prod_modal_environment}" modal_app.py
 
-curl --fail --silent --show-error "${production_modal_origin}/healthz" >/dev/null
-curl --fail --silent --show-error "${production_web_origin}/api/healthz" >/dev/null
+curl --fail --silent --show-error --retry 6 --retry-delay 5 --retry-all-errors \
+  "${production_modal_origin}/healthz" >/dev/null
+curl --fail --silent --show-error --retry 6 --retry-delay 5 --retry-all-errors \
+  "${production_web_origin}/api/healthz" >/dev/null
 context_status="$(
   curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
     "${production_modal_origin}/v1/context"
