@@ -486,56 +486,17 @@ def database_status() -> None:
     timeout=60,
     **_region_options(),
 )
-def configuration_status() -> None:
-    """Print presence-only production configuration without revealing values."""
+def configuration_status(required_groups: str = "core") -> None:
+    """Print presence-only configuration and fail when required groups are incomplete."""
 
-    requirement_groups = {
-        "core": (
-            "DENALI_DSN",
-            "DENALI_MIGRATION_DSN",
-            "DENALI_WEB_URL",
-            "DENALI_CORS_ORIGINS",
-            "CLERK_SECRET_KEY",
-            "CLERK_JWT_KEY",
-            "CLERK_AUTHORIZED_PARTIES",
-        ),
-        "aws": (
-            "DENALI_MODAL_AWS_ROLE_ARN",
-            "DENALI_AWS_ONBOARDING_BUCKET",
-            "DENALI_AWS_PRINCIPAL_ARN",
-        ),
-        "evidence": ("DENALI_AWS_ONBOARDING_BUCKET",),
-        "azure": (
-            "DENALI_AZURE_ONBOARDING_BUCKET",
-            "DENALI_AZURE_CLIENT_ID",
-            "DENALI_AZURE_CLIENT_SECRET",
-        ),
-        "entra": (
-            "DENALI_ENTRA_CLIENT_ID",
-            "DENALI_ENTRA_CLIENT_SECRET",
-            "DENALI_ENTRA_CALLBACK_URL",
-        ),
-        "gcp": (
-            "DENALI_GCP_ONBOARDING_BUCKET",
-            "DENALI_GCP_OPERATOR_PROJECT_ID",
-            "DENALI_GCP_WORKLOAD_IDENTITY_PROVIDER",
-            "DENALI_GCP_RUNTIME_SERVICE_ACCOUNT",
-        ),
-        "google_workspace": (
-            "DENALI_GOOGLE_WORKSPACE_SERVICE_ACCOUNT",
-            "DENALI_GOOGLE_WORKSPACE_CLIENT_ID",
-        ),
-        "github": (
-            "DENALI_GITHUB_APP_ID",
-            "DENALI_GITHUB_CLIENT_ID",
-            "DENALI_GITHUB_CLIENT_SECRET",
-            "DENALI_GITHUB_APP_SLUG",
-            "DENALI_GITHUB_PRIVATE_KEY",
-            "DENALI_GITHUB_CALLBACK_URL",
-        ),
-    }
-    for group, requirements in requirement_groups.items():
-        missing = [name for name in requirements if not os.environ.get(name, "").strip()]
+    from denali.hosted_configuration import configuration_report, require_configuration
+
+    report = configuration_report(os.environ)
+    for group, missing in report.items():
         state = "ready" if not missing else "incomplete"
         missing_text = ",".join(missing) if missing else "none"
         print(f"group={group} state={state} missing={missing_text}")
+    required = tuple(group.strip() for group in required_groups.split(",") if group.strip())
+    if not required:
+        raise ValueError("at least one configuration group is required")
+    require_configuration(report, required)

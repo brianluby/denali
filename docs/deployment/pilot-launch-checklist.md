@@ -3,7 +3,10 @@
 Use this as the ordered launch-control artifact. Do not skip ahead: the production URL is an
 input to Clerk and provider callbacks, and the Modal URL is an input to Vercel.
 
-## Current checkpoint — 2026-09-14
+## Current checkpoint — 2026-09-15
+
+The [agent security roadmap](../product/agent-security-roadmap.md) is the current priority and P0
+exit contract. This checklist remains the operator control for completing its hosted evidence.
 
 - [x] Production Vercel and Modal deployments are healthy at the canonical domain and same-origin
   API boundary.
@@ -16,6 +19,8 @@ input to Clerk and provider callbacks, and the Modal URL is an input to Vercel.
 - [x] Azure Repos hosted lifecycle and code-to-cloud acceptance passed on 10 September 2026.
 - [x] Azure Foundry AIDR production acceptance passed on 14 September 2026 with one Anna session,
   six metadata-only activities, complete coverage, and zero prohibited content fields.
+- [ ] Deploy the fail-closed configuration gate that requires core plus AWS, Azure, GCP, Entra,
+  Google Workspace, GitHub, and Azure Repos configuration before a production release.
 - [ ] Complete and retain create, setup/callback, validate, collect, disable, and delete evidence
   for every enabled provider that does not yet have a full dated record.
 - [ ] Complete two-organization isolation testing with non-empty evidence.

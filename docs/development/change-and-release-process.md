@@ -18,6 +18,9 @@ unsafe release.
    an explicit pre-deploy step under the repository advisory lock.
 8. A deploy is not complete until direct Modal health, the Vercel `/api` proxy, and the
    unauthenticated authorization boundary are verified.
+9. Production configuration validation fails closed for the core runtime and every P0 provider
+   group before migrations or deployment begin; it reports missing variable names but never
+   values.
 
 ## 2. Change lifecycle
 
