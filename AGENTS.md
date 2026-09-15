@@ -3,7 +3,9 @@
 These instructions apply to the entire repository. Read
 [`docs/architecture/0028-hosted-multi-tenant-runtime.md`](docs/architecture/0028-hosted-multi-tenant-runtime.md)
 before changing authentication, tenancy, API routing, persistence, background work, deployment,
-or provider onboarding.
+or provider onboarding. Read
+[`docs/development/hosted-dev-environment.md`](docs/development/hosted-dev-environment.md) before
+changing or diagnosing the shared Clerk, Vercel, Modal, or Neon development environment.
 
 ## Non-negotiable delivery workflow
 
@@ -64,6 +66,9 @@ or provider onboarding.
   production Neon. Vercel Preview uses the Clerk development instance, the isolated `denali-dev`
   Modal app, and an isolated Neon `denali-dev` branch/database. Never route a development Clerk
   token to the production Modal verifier or route a preview build to the production database.
+- The shared Clerk development instance must use the same custom session claims as production and
+  must not add an `aud` claim. Do not add `CLERK_AUDIENCE` to compensate for a shared-instance
+  mismatch; reconcile Clerk first, then issue a fresh session token.
 - Backend, database, and provider integration secrets belong in Modal Secrets. Never put
   `CLERK_SECRET_KEY`, a database DSN, provider secret, token, or private key in a `VITE_*`
   variable, Vercel build output, logs, fixtures, screenshots, or the repository.

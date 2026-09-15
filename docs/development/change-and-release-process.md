@@ -114,6 +114,8 @@ The GitHub environment named `production` must:
 
 Never point a preview at the production Modal origin or database. A preview URL changing does not
 justify adding wildcards to Clerk authorized parties or CORS; use a stable branch alias.
+Use the [hosted development environment runbook](hosted-dev-environment.md) for the live domain,
+environment variables, Clerk claim contract, safe Modal redeploy sequence, and smoke checks.
 
 ## 5. Backend production deployment
 
