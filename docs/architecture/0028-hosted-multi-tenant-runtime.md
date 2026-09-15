@@ -136,6 +136,13 @@ redirect/origin configuration when one is available, and keep the Preview `MODAL
 pointed at the stable `denali-dev` Modal API origin. If the branch alias changes, update the Clerk
 development instance allowlist plus `CLERK_AUTHORIZED_PARTIES`, `DENALI_WEB_URL`, and
 `DENALI_CORS_ORIGINS` in the `denali-dev` Modal Secret together, then redeploy `denali-dev`.
+The live development values, safe redeploy sequence, and authentication recovery steps are in the
+[hosted development runbook](../development/hosted-dev-environment.md).
+
+The shared Clerk development instance uses the same custom session claims as production and does
+not emit a custom `aud` claim. `CLERK_AUDIENCE` is therefore intentionally absent from
+`denali-dev`; adding an application-specific audience would break other applications sharing that
+development instance.
 
 Vercel receives only:
 

@@ -240,7 +240,8 @@ isolated hosted development stack named `denali-dev`:
 2. Create a Modal environment named `denali-dev`, then create a Secret named `denali-dev` inside
    it with those DSNs, the Clerk development `sk_test_...` key and matching development JWKS PEM,
    and the exact stable Vercel preview origin in `CLERK_AUTHORIZED_PARTIES`, `DENALI_WEB_URL`, and
-   `DENALI_CORS_ORIGINS`.
+   `DENALI_CORS_ORIGINS`. Keep the shared Clerk development session claims aligned with production
+   and do not add a custom `aud` claim or `CLERK_AUDIENCE`.
 3. Deploy and migrate the separate Modal application with the checked-in helper:
 
    ```bash
@@ -263,6 +264,12 @@ Clerk development instance and in `CLERK_AUTHORIZED_PARTIES`, `DENALI_WEB_URL`, 
 `DENALI_CORS_ORIGINS` in the `denali-dev` Modal Secret, then redeploy `denali-dev`. Do not use a
 wildcard authorized party or CORS origin. Moving the alias to a new PR deployment does not require
 changing those values.
+
+The stable shared development entrypoint is `https://denali-dev.transilience.cloud`, assigned to
+Vercel's custom `denali-dev` environment tracking the `dev` branch. It and the stable review alias
+must both be present in the Modal authorized-party and CORS lists. Follow the
+[hosted development environment runbook](../development/hosted-dev-environment.md) for the exact
+values, clean-revision deployment procedure, smoke checks, and Clerk error recovery.
 
 ## 5. Acceptance and operations
 

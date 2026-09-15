@@ -114,6 +114,14 @@ The GitHub environment named `production` must:
 
 Never point a preview at the production Modal origin or database. A preview URL changing does not
 justify adding wildcards to Clerk authorized parties or CORS; use a stable branch alias.
+Use the [hosted development environment runbook](hosted-dev-environment.md) for the live domain,
+environment variables, Clerk claim contract, safe Modal redeploy sequence, and smoke checks.
+
+Pushing a reviewed revision to `dev` automatically runs **Deploy Modal development**. The workflow
+repeats the complete verification gate, requires the exact remote `dev` SHA, applies development
+migrations, deploys Modal, and checks the direct and same-origin health boundaries. A Modal
+Secret-only change has no Git push, so manually dispatch that workflow from `dev` with the exact
+current `dev` SHA. Production deployment remains separately approved and manual.
 
 ## 5. Backend production deployment
 

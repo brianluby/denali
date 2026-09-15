@@ -3,7 +3,9 @@
 These instructions apply to the entire repository. Read
 [`docs/architecture/0028-hosted-multi-tenant-runtime.md`](docs/architecture/0028-hosted-multi-tenant-runtime.md)
 before changing authentication, tenancy, API routing, persistence, background work, deployment,
-or provider onboarding.
+or provider onboarding. Read
+[`docs/development/hosted-dev-environment.md`](docs/development/hosted-dev-environment.md) before
+changing or diagnosing the shared Clerk, Vercel, Modal, or Neon development environment.
 
 ## Non-negotiable delivery workflow
 
@@ -22,6 +24,9 @@ or provider onboarding.
   only from clean, current `main` after the PR is merged and the user explicitly requests it.
 - Vercel Preview belongs to `denali-dev`; Vercel Production is produced from merged `main` only.
   A preview result is evidence for a PR, never authorization to deploy Modal production.
+- A push to `dev` automatically runs the protected Modal development deployment. Update `dev`
+  only with reviewed revisions intended for the shared development environment. For a Secret-only
+  change, manually dispatch **Deploy Modal development** from `dev` with its exact current SHA.
 - Follow [`CONTRIBUTING.md`](CONTRIBUTING.md) and
   [`docs/development/change-and-release-process.md`](docs/development/change-and-release-process.md)
   for the executable branch, PR, verification, deployment, rollback, and handoff sequence.
@@ -64,6 +69,9 @@ or provider onboarding.
   production Neon. Vercel Preview uses the Clerk development instance, the isolated `denali-dev`
   Modal app, and an isolated Neon `denali-dev` branch/database. Never route a development Clerk
   token to the production Modal verifier or route a preview build to the production database.
+- The shared Clerk development instance must use the same custom session claims as production and
+  must not add an `aud` claim. Do not add `CLERK_AUDIENCE` to compensate for a shared-instance
+  mismatch; reconcile Clerk first, then issue a fresh session token.
 - Backend, database, and provider integration secrets belong in Modal Secrets. Never put
   `CLERK_SECRET_KEY`, a database DSN, provider secret, token, or private key in a `VITE_*`
   variable, Vercel build output, logs, fixtures, screenshots, or the repository.

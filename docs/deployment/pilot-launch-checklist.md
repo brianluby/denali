@@ -231,6 +231,23 @@ Development preview deployment recorded on 2026-09-02:
   sign-in to be enabled in the matching Clerk development/production instance; Denali does not
   store or return the initial password.
 
+Shared development environment updated and authenticated on 2026-09-15:
+
+- stable domain: `https://denali-dev.transilience.cloud`;
+- Vercel custom environment: `denali-dev`, tracking `dev`;
+- stable review alias: `https://denali-dev-preview-transilience-a55654db.vercel.app`;
+- Clerk development claims aligned with production and application-specific `aud` removed;
+- Modal authorized parties, canonical web URL, and CORS origins synchronized for the stable
+  domain, stable review alias, and local ports 3000 and 3001;
+- `denali-dev` migrated and deployed from `a98bf9c8e805c911460e71e962b1836d80f3f474`;
+- authenticated context and the application data API set returned `200` through the same-origin
+  proxy.
+
+Use the [hosted development environment runbook](../development/hosted-dev-environment.md) for
+future changes. A push to `dev` now deploys Modal development automatically. A Modal Secret edit
+must be followed by a manual **Deploy Modal development** workflow dispatch so warm containers load
+the new values.
+
 ### 7. Reconcile the final URL
 
 If the deployed URL differs from step 1, update all of these together and redeploy:
