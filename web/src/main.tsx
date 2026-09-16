@@ -6,9 +6,11 @@ import {
   UserButton,
   useAuth,
 } from "@clerk/react";
+import { Analytics } from "@vercel/analytics/react";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { sanitizeAnalyticsEvent } from "./analytics";
 import { api, configureApiTokenProvider, type DenaliContext } from "./api";
 import ProfilePage from "./ProfilePage";
 import "./styles.css";
@@ -58,4 +60,9 @@ const application = publishableKey ? (
   </ClerkProvider>
 ) : <App canWrite />;
 
-createRoot(document.getElementById("root")!).render(<StrictMode>{application}</StrictMode>);
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    {application}
+    <Analytics beforeSend={sanitizeAnalyticsEvent} />
+  </StrictMode>,
+);
