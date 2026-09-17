@@ -108,13 +108,13 @@ changing or diagnosing the shared Clerk, Vercel, Modal, or Neon development envi
 - Preserve local Compose mode for development. Hosted-only changes must not require Clerk or Modal
   for the local test suite unless the test explicitly covers hosted behavior.
 - `DENALI_MODAL_APP_NAME`, `DENALI_MODAL_SECRET_NAME`, and
-  `DENALI_MODAL_PROVIDER_SECRET_NAME` are deploy-shell settings. Every function mounts exactly
-  one core Secret and one integration Secret so Modal's local and remote dependency graphs remain
-  identical. Production normally uses `custom-secret` plus `denali-github-provider`; the Shasta
-  Workspace pilot function alone uses `custom-secret` plus `shasta-denali-bridge`, selected by
-  `DENALI_MODAL_SHASTA_BRIDGE_SECRET_NAME` in the production deploy shell. Hosted preview uses
-  `denali-dev` plus an environment-local provider Secret. Integration Secrets must not duplicate
-  or override core Clerk/Neon keys.
+  `DENALI_MODAL_PROVIDER_SECRET_NAME` are deploy-shell settings. Every function mounts one core
+  Secret and one provider Secret so Modal's local and remote dependency graphs are stable. The
+  Shasta Workspace pilot function additionally mounts `shasta-denali-bridge` in production,
+  selected by `DENALI_MODAL_SHASTA_BRIDGE_SECRET_NAME` in the deploy shell; it still needs the
+  provider Secret's Google Workspace operator identity. Hosted preview uses `denali-dev` plus
+  an environment-local provider Secret and does not mount a duplicate bridge Secret.
+  Integration Secrets must not duplicate or override core Clerk/Neon keys.
 
 ## Required verification
 
