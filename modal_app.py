@@ -20,6 +20,10 @@ image = (
     .add_local_dir("src", remote_path="/opt/denali/src", copy=True)
     .run_commands("pip install '/opt/denali[api,aws,azure,gcp,github,hosted]'")
 )
+shasta_bridge_image = image.apt_install("git").run_commands(
+    "pip install 'git+https://github.com/kkmookhey/ciso-copilot.git"
+    "@0e92ebe76f2962b82674feb91b3d9d7eeb21300c#subdirectory=shasta'"
+)
 runtime_secrets = [
     modal.Secret.from_name(SECRET_NAME),
     modal.Secret.from_name(PROVIDER_SECRET_NAME),
@@ -444,6 +448,28 @@ def active_connection_status(limit: int = 100) -> list[dict[str, str]]:
             )
         )
     return statuses
+
+
+@app.function(
+    image=shasta_bridge_image,
+    secrets=runtime_secrets,
+    timeout=2400,
+    retries=0,
+    **_region_options(),
+)
+def collect_shasta_pilot_workspace() -> dict[str, object]:
+    """Run the opt-in, operator-bound Shasta Workspace pilot from Denali's WIF identity."""
+
+    from denali.bridges.shasta_workspace import collect_pilot_workspace
+
+    _configure_gcp_oidc()
+    receipt = collect_pilot_workspace()
+    print(
+        "shasta_workspace_snapshot "
+        f"source_id={receipt['source_id']} snapshot_id={receipt['snapshot_id']} "
+        f"replayed={receipt['replayed']} body_sha256={receipt['body_sha256']}"
+    )
+    return receipt
 
 
 @app.function(
