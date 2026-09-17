@@ -12,9 +12,7 @@ SECRET_NAME = os.environ.get("DENALI_MODAL_SECRET_NAME", "denali-production")
 PROVIDER_SECRET_NAME = os.environ.get(
     "DENALI_MODAL_PROVIDER_SECRET_NAME", "denali-github-provider"
 )
-SHASTA_BRIDGE_SECRET_NAME = os.environ.get(
-    "DENALI_MODAL_SHASTA_BRIDGE_SECRET_NAME", PROVIDER_SECRET_NAME
-)
+SHASTA_BRIDGE_SECRET_NAME = "shasta-denali-bridge"
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -29,11 +27,7 @@ runtime_secrets = [
 ]
 shasta_bridge_secrets = [
     *runtime_secrets,
-    *(
-        [modal.Secret.from_name(SHASTA_BRIDGE_SECRET_NAME)]
-        if SHASTA_BRIDGE_SECRET_NAME != PROVIDER_SECRET_NAME
-        else []
-    ),
+    modal.Secret.from_name(SHASTA_BRIDGE_SECRET_NAME),
 ]
 app = modal.App(APP_NAME)
 
