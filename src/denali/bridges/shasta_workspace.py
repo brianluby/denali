@@ -39,7 +39,7 @@ def collect_pilot_workspace(
     if len(secret) < 32:
         raise RuntimeError("The Shasta Workspace bridge secret is too short")
     if publisher is None:
-        from shasta_compliance.denali_bridge import collect_and_publish
+        from denali.bridges.shasta_workspace_snapshot import collect_and_publish
 
         publisher = collect_and_publish
     return publisher(
