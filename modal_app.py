@@ -20,10 +20,6 @@ image = (
     .add_local_dir("src", remote_path="/opt/denali/src", copy=True)
     .run_commands("pip install '/opt/denali[api,aws,azure,gcp,github,hosted]'")
 )
-shasta_bridge_image = image.apt_install("git").run_commands(
-    "pip install 'git+https://github.com/kkmookhey/ciso-copilot.git"
-    "@0e92ebe76f2962b82674feb91b3d9d7eeb21300c#subdirectory=shasta'"
-)
 runtime_secrets = [
     modal.Secret.from_name(SECRET_NAME),
     modal.Secret.from_name(PROVIDER_SECRET_NAME),
@@ -451,7 +447,7 @@ def active_connection_status(limit: int = 100) -> list[dict[str, str]]:
 
 
 @app.function(
-    image=shasta_bridge_image,
+    image=image,
     secrets=runtime_secrets,
     timeout=2400,
     retries=0,

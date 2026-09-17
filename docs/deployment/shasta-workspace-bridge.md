@@ -1,12 +1,15 @@
 # Shasta Google Workspace pilot bridge
 
-Status: code prepared for PR; **not merged, deployed, configured, or provider-accepted**.
+Status: corrective code prepared for PR; **not deployed, configured, or provider-accepted**.
+The first deployment of merged PR #58 stopped during image build because its source
+dependency lived in a private repository inaccessible to Modal's builder. The live
+Denali app was not replaced. This correction removes that build-time dependency.
 
 Denali remains the credential owner. The fixed `collect_shasta_pilot_workspace` function
 runs in the existing `denali-production` Modal app, where Google Workload Identity
-Federation accepts its app/environment identity. It uses a separately built image
-layer pinned to the reviewed Shasta source commit, leaving Denali's API and other
-workers on their current image. It loads the active Workspace connection through
+Federation accepts its app/environment identity. It uses a small in-repository,
+reviewable Shasta v1 snapshot adapter and no private-repository build credential.
+It loads the active Workspace connection through
 Denali's tenant-and-connection-scoped repository call, mints short-lived delegated
 read-only credentials, and publishes only a bounded Shasta snapshot. No provider
 token or raw Google response is logged, returned, or copied into a tenant record.
