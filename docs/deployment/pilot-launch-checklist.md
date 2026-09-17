@@ -24,8 +24,20 @@ exit contract. This checklist remains the operator control for completing its ho
 - [ ] Complete and retain create, setup/callback, validate, collect, disable, and delete evidence
   for every enabled provider that does not yet have a full dated record.
 - [ ] Complete two-organization isolation testing with non-empty evidence.
+- [x] Create a real second Clerk Organization, retain a complete AgentCore collection with two
+  inventory resources, and pass hosted UI read isolation in both directions. Direct API mutation
+  and `org:member` checks remain under the broader isolation gate. See the
+  [2026-09-15 record](../product/two-organization-isolation-2026-09-15.md).
 - [ ] Split the Neon runtime and migration roles, enable production alerts/backups, and complete a
   restore drill.
+- [x] Create and verify distinct least-privilege Neon runtime and migration roles and rotate the
+  Modal DSNs. A later protected deployment replaced the warm production application and the
+  deployed status function succeeded through the rotated runtime DSN. See the
+  [2026-09-15 role record](../product/neon-role-split-2026-09-15.md).
+- [x] Exercise Modal function timeout classification and alert delivery in an isolated hosted
+  drill, then stop the disposable app. See the
+  [2026-09-15 record](../product/modal-alert-hosted-acceptance-2026-09-15.md).
+- [ ] Enable and exercise Vercel deployment/runtime monitoring.
 
 Production runtime:
 

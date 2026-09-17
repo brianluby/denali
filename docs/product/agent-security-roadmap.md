@@ -102,16 +102,16 @@ authoritative.
 
 | Boundary | Current evidence | P0 gap |
 | --- | --- | --- |
-| AWS | Production setup, validation across 17 enabled Regions, and deployment collection were observed; local code-to-cloud acceptance exists | Retain one complete hosted lifecycle record and complete hosted AgentCore create/update, collect, investigate, and approval acceptance |
+| AWS | The dated AgentCore record retains hosted create/update/invoke, five-plane validation, durable collection, investigation/export, privacy inspection, disable, and post-disable retention evidence | Prove delete and post-delete retention on a different disposable connection; the accepted fixture remains disabled by operator decision |
 | Azure | Production setup and healthy validation were observed; Foundry metadata-only AIDR is production accepted | Retain unselected-subscription, partial-state, disable, and delete evidence in a complete lifecycle record |
 | Google Cloud | Production onboarding was reported working and live local project acceptance exists | Retain a complete hosted lifecycle and collection record |
 | Microsoft Entra | Production consent and validation were observed | Retain a complete hosted lifecycle and collection record |
 | Google Workspace | Implementation, durable jobs, fixed-scope validation, and automated contracts exist | Complete and retain the first hosted production lifecycle and collection record |
 | GitHub | Production installation was corrected; live local exact-repository acceptance exists | Retain a complete hosted lifecycle and source-collection record |
 | Azure Repos | Hosted lifecycle and code-to-cloud acceptance passed on 2026-09-10 | Preserve a dedicated dated acceptance record with the complete evidence fields above |
-| Tenancy | Automated PostgreSQL and API cross-tenant contracts exist | Complete hosted two-Organization testing with non-empty evidence |
-| Neon operations | Explicit migration path and pooled/direct DSNs exist | Split runtime/migration roles, enable alerts/backups, and complete a restore drill |
-| Runtime operations | Durable validation and collection workers exist | Enable and exercise Modal failure/timeout alerts and Vercel monitoring |
+| Tenancy | Two real non-empty Clerk Organizations now contain separately scoped evidence; hosted switching and UI read isolation passed in both directions | Complete direct API read/mutation and member/admin outcomes in both directions |
+| Neon operations | Runtime and migration roles are split, least-privilege probes passed, and a later protected deployment activated the rotated runtime DSN | Remove the obsolete owner compatibility grant, then enable managed alerts/backups and complete a restore drill |
+| Runtime operations | Modal timeout alerting passed; privacy-safe Vercel Web Analytics code is merged and deployed; protected production and Vercel deployment checks are succeeding | Enable Web Analytics in the Vercel project and exercise the dashboard/runtime monitoring path |
 
 On 2026-09-15, the deployed identifier-only status function reported 20 active connections across
 seven Denali tenants and included every P0 provider. Thirteen connections were healthy, three were
@@ -119,6 +119,17 @@ partial, and four were unhealthy. Ten had a complete latest primary collection, 
 latest collection, and six had none. No validation or collection job was running. This confirms
 real deployed breadth and durable status visibility; it does not prove lifecycle acceptance,
 tenant isolation, freshness, or correctness of the partial and unhealthy boundaries.
+
+The Modal half of the runtime-operations gate passed on 2026-09-15. The
+[dated alert record](modal-alert-hosted-acceptance-2026-09-15.md) retains the enabled notification
+settings, an isolated ten-second timeout, immediate failure-email delivery, and drill cleanup.
+Vercel monitoring remains open and P0 is not complete.
+
+The Neon role split passed its database and fresh-container checks on 2026-09-15. A later protected
+production deployment replaced the warm Modal application and the deployed connection-status
+function succeeded through the rotated runtime DSN. See the
+[dated least-privilege record](neon-role-split-2026-09-15.md). Managed backup, alert, restore, and
+obsolete-owner cleanup controls remain open.
 
 ## P1 — trusted agent execution evidence
 
