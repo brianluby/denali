@@ -47,7 +47,7 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createElement, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api } from "./api";
 import {
   completedRunningConnectionIds,
@@ -607,6 +607,7 @@ function App({ canWrite = true, accountControls, profilePage }: { canWrite?: boo
 
   return (
     <div className="app-shell">
+      {createElement("app-sidebar")}
       <Sidebar page={page} onNavigate={navigate} open={sidebarOpen} />
       {sidebarOpen && <button className="sidebar-scrim" aria-label="Close menu" onClick={() => setSidebarOpen(false)} />}
 

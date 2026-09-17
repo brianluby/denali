@@ -449,6 +449,28 @@ def active_connection_status(limit: int = 100) -> list[dict[str, str]]:
 @app.function(
     image=image,
     secrets=runtime_secrets,
+    timeout=2400,
+    retries=0,
+    **_region_options(),
+)
+def collect_shasta_pilot_workspace() -> dict[str, object]:
+    """Run the opt-in, operator-bound Shasta Workspace pilot from Denali's WIF identity."""
+
+    from denali.bridges.shasta_workspace import collect_pilot_workspace
+
+    _configure_gcp_oidc()
+    receipt = collect_pilot_workspace()
+    print(
+        "shasta_workspace_snapshot "
+        f"source_id={receipt['source_id']} snapshot_id={receipt['snapshot_id']} "
+        f"replayed={receipt['replayed']} body_sha256={receipt['body_sha256']}"
+    )
+    return receipt
+
+
+@app.function(
+    image=image,
+    secrets=runtime_secrets,
     timeout=600,
     **_region_options(),
 )
