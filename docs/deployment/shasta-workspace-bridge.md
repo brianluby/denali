@@ -1,8 +1,11 @@
 # Shasta Google Workspace pilot bridge
 
-Status: the self-contained bridge function from PR #61 is deployed. The dedicated
-Secret mount, operator bindings, first collection, and provider acceptance remain
-pending until verified separately. PR #58's first deployment stopped during image
+Status: the self-contained bridge function from PR #61 and the dedicated bridge Secret
+mount from PR #62 are deployed. The operator bindings are present, but the first
+collection stopped before a Google request because the bridge function lacked the
+Google Workspace service-account setting from Denali's provider Secret. A corrected
+three-Secret mount, first collection, and provider acceptance remain pending. PR #58's
+first deployment stopped during image
 build because a private dependency was inaccessible to Modal's builder; PR #61
 removed that dependency.
 
@@ -39,9 +42,9 @@ Google workload-identity condition.
 
 Production deployment sets `DENALI_MODAL_SHASTA_BRIDGE_SECRET_NAME` to
 `shasta-denali-bridge`. Only the Shasta Workspace function mounts it, alongside the
-existing core Secret; all other functions retain the GitHub provider Secret. Local
-and development evaluation falls back to the environment-local provider Secret, but
-the bridge is not configured or accepted there.
+existing core and provider Secrets; all other functions retain just those two. Local
+and development evaluation uses the environment-local provider Secret without
+mounting it twice, and the bridge is not configured or accepted there.
 
 Once deployed and configured, an authorized operator may invoke the **already
 deployed** function via `python scripts/invoke_shasta_workspace_bridge.py`. This

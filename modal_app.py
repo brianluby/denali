@@ -28,8 +28,12 @@ runtime_secrets = [
     modal.Secret.from_name(PROVIDER_SECRET_NAME),
 ]
 shasta_bridge_secrets = [
-    modal.Secret.from_name(SECRET_NAME),
-    modal.Secret.from_name(SHASTA_BRIDGE_SECRET_NAME),
+    *runtime_secrets,
+    *(
+        [modal.Secret.from_name(SHASTA_BRIDGE_SECRET_NAME)]
+        if SHASTA_BRIDGE_SECRET_NAME != PROVIDER_SECRET_NAME
+        else []
+    ),
 ]
 app = modal.App(APP_NAME)
 
