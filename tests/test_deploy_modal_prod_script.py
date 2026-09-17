@@ -37,6 +37,8 @@ esac
         """#!/usr/bin/env bash
 set -euo pipefail
 printf 'modal %s\n' "$*" >>"${FAKE_CALL_LOG}"
+printf 'shasta_bridge_secret=%s\n' \
+  "${DENALI_MODAL_SHASTA_BRIDGE_SECRET_NAME:-}" >>"${FAKE_CALL_LOG}"
 """,
     )
     _executable(
@@ -143,6 +145,7 @@ def test_production_deploy_runs_checks_migration_deploy_and_smoke_tests(
     assert "modal run --env denali-prod modal_app.py::migrate_database" in calls
     assert "modal run --env denali-prod modal_app.py::database_status" in calls
     assert "modal deploy --env denali-prod modal_app.py" in calls
+    assert "shasta_bridge_secret=shasta-denali-bridge" in calls
     assert "https://transilience-denali-prod--denali-production-api.modal.run/healthz" in calls
     assert "https://denali.transilience.cloud/api/healthz" in calls
     assert "https://transilience-denali-prod--denali-production-api.modal.run/v1/context" in calls

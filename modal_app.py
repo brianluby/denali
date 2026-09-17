@@ -12,6 +12,9 @@ SECRET_NAME = os.environ.get("DENALI_MODAL_SECRET_NAME", "denali-production")
 PROVIDER_SECRET_NAME = os.environ.get(
     "DENALI_MODAL_PROVIDER_SECRET_NAME", "denali-github-provider"
 )
+SHASTA_BRIDGE_SECRET_NAME = os.environ.get(
+    "DENALI_MODAL_SHASTA_BRIDGE_SECRET_NAME", PROVIDER_SECRET_NAME
+)
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -23,6 +26,10 @@ image = (
 runtime_secrets = [
     modal.Secret.from_name(SECRET_NAME),
     modal.Secret.from_name(PROVIDER_SECRET_NAME),
+]
+shasta_bridge_secrets = [
+    modal.Secret.from_name(SECRET_NAME),
+    modal.Secret.from_name(SHASTA_BRIDGE_SECRET_NAME),
 ]
 app = modal.App(APP_NAME)
 
@@ -448,7 +455,7 @@ def active_connection_status(limit: int = 100) -> list[dict[str, str]]:
 
 @app.function(
     image=image,
-    secrets=runtime_secrets,
+    secrets=shasta_bridge_secrets,
     timeout=2400,
     retries=0,
     **_region_options(),
