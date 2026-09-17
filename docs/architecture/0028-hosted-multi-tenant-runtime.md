@@ -193,17 +193,18 @@ schedulers. The pilot keeps a warm API container, but correctness must not depen
 or on requests reaching the same container.
 
 `DENALI_MODAL_REGION`, `DENALI_MODAL_APP_NAME`, `DENALI_MODAL_SECRET_NAME`, and
-`DENALI_MODAL_PROVIDER_SECRET_NAME` and `DENALI_MODAL_SHASTA_BRIDGE_SECRET_NAME` are deploy-shell
+`DENALI_MODAL_PROVIDER_SECRET_NAME` are deploy-shell
 configuration because Modal resolves image/function declarations before runtime Secrets are
 attached. Every function mounts one core Secret and one environment-local provider Secret; keeping
 those resources stable is required for consistent local and remote Modal module evaluation. The
 provider Secret is mounted after the core Secret and must not repeat core Clerk or Neon keys.
 Production normally uses `custom-secret` plus `denali-github-provider`; the Shasta Workspace pilot
-function additionally mounts `shasta-denali-bridge` for its per-source signing key and fixed
-bindings, while retaining the provider Secret's Google Workspace operator identity. Preview uses
-`denali-dev` plus an environment-local `denali-github-provider`, which may contain only a
-non-sensitive disabled marker until a development GitHub App is configured. The Shasta function
-does not duplicate that provider Secret in development and is not configured for collection there.
+function additionally mounts a fixed-name `shasta-denali-bridge` for its per-source signing key and
+bindings, while retaining the provider Secret's Google Workspace operator identity. The fixed name
+keeps the dependency count identical when the deploy process and remote worker each import this
+module. Preview uses `denali-dev` plus environment-local `denali-github-provider` and
+`shasta-denali-bridge` Secrets; the bridge Secret there contains only a disabled marker. The Shasta
+function is not configured for collection in development.
 
 Local Compose mode remains supported for development with one configured tenant and no Clerk
 authorization. Local mode is not a production topology and must not weaken hosted defaults.
