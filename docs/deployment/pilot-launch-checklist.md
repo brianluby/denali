@@ -3,7 +3,7 @@
 Use this as the ordered launch-control artifact. Do not skip ahead: the production URL is an
 input to Clerk and provider callbacks, and the Modal URL is an input to Vercel.
 
-## Current checkpoint — 2026-09-15
+## Current checkpoint — 2026-09-17
 
 The [agent security roadmap](../product/agent-security-roadmap.md) is the current priority and P0
 exit contract. This checklist remains the operator control for completing its hosted evidence.
@@ -32,12 +32,24 @@ exit contract. This checklist remains the operator control for completing its ho
   restore drill.
 - [x] Create and verify distinct least-privilege Neon runtime and migration roles and rotate the
   Modal DSNs. A later protected deployment replaced the warm production application and the
-  deployed status function succeeded through the rotated runtime DSN. See the
+  deployed status function succeeded through the rotated runtime DSN. The obsolete owner CRUD
+  compatibility grant was removed on 17 September and the deployed function then returned all 21
+  connection rows through the runtime role. See the
   [2026-09-15 role record](../product/neon-role-split-2026-09-15.md).
 - [x] Exercise Modal function timeout classification and alert delivery in an isolated hosted
   drill, then stop the disposable app. See the
   [2026-09-15 record](../product/modal-alert-hosted-acceptance-2026-09-15.md).
 - [ ] Enable and exercise Vercel deployment/runtime monitoring.
+
+Control-plane access blockers verified on 17 September 2026:
+
+- the available Neon account has no projects and must be invited to the production project (or be
+  given a scoped API credential) before alerts, recovery settings, and a restore branch can be
+  exercised;
+- Vercel GitHub login returns `github_account_not_linked`; the existing Vercel account must first
+  be opened with its current email/passkey method and then linked to GitHub; and
+- neither real Clerk Organization contains an `org:member`, so the hosted member-role matrix needs
+  an explicitly authorized temporary role change or a bounded test member.
 
 Production runtime:
 

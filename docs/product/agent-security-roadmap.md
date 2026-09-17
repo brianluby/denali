@@ -2,6 +2,8 @@
 
 Date: 2026-09-15
 
+Last updated: 2026-09-17
+
 ## Product direction
 
 Denali is the independent evidence, detection, and containment layer for autonomous AI activity
@@ -107,11 +109,11 @@ authoritative.
 | Google Cloud | Production onboarding was reported working and live local project acceptance exists | Retain a complete hosted lifecycle and collection record |
 | Microsoft Entra | Production consent and validation were observed | Retain a complete hosted lifecycle and collection record |
 | Google Workspace | Implementation, durable jobs, fixed-scope validation, and automated contracts exist | Complete and retain the first hosted production lifecycle and collection record |
-| GitHub | Production installation was corrected; live local exact-repository acceptance exists | Retain a complete hosted lifecycle and source-collection record |
+| GitHub | Production installation is healthy across five exact repositories and all 15 validation planes; a 2026-09-17 collection completed source, inventory, and posture for all five | Retain a complete hosted lifecycle record; Shasta code-to-cloud coverage remains explicitly partial because one Terraform deployment name is computed rather than one literal |
 | Azure Repos | Hosted lifecycle and code-to-cloud acceptance passed on 2026-09-10 | Preserve a dedicated dated acceptance record with the complete evidence fields above |
 | Tenancy | Two real non-empty Clerk Organizations now contain separately scoped evidence; hosted switching and UI read isolation passed in both directions | Complete direct API read/mutation and member/admin outcomes in both directions |
-| Neon operations | Runtime and migration roles are split, least-privilege probes passed, and a later protected deployment activated the rotated runtime DSN | Remove the obsolete owner compatibility grant, then enable managed alerts/backups and complete a restore drill |
-| Runtime operations | Modal timeout alerting passed; privacy-safe Vercel Web Analytics code is merged and deployed; protected production and Vercel deployment checks are succeeding | Enable Web Analytics in the Vercel project and exercise the dashboard/runtime monitoring path |
+| Neon operations | Runtime and migration roles are split, the rotated runtime is active, and the obsolete owner CRUD compatibility grant has been removed | Project control-plane access is absent from the signed-in Neon identity; enable managed alerts/backups and complete a restore drill after the owner grants access |
+| Runtime operations | Modal timeout alerting passed; privacy-safe Vercel Web Analytics code is merged and deployed; protected production and Vercel deployment checks are succeeding | The GitHub identity is not linked to the existing Vercel account; log in with that account, link GitHub, then enable Web Analytics and exercise the dashboard/runtime path |
 
 On 2026-09-15, the deployed identifier-only status function reported 20 active connections across
 seven Denali tenants and included every P0 provider. Thirteen connections were healthy, three were
@@ -126,10 +128,11 @@ settings, an isolated ten-second timeout, immediate failure-email delivery, and 
 Vercel monitoring remains open and P0 is not complete.
 
 The Neon role split passed its database and fresh-container checks on 2026-09-15. A later protected
-production deployment replaced the warm Modal application and the deployed connection-status
-function succeeded through the rotated runtime DSN. See the
-[dated least-privilege record](neon-role-split-2026-09-15.md). Managed backup, alert, restore, and
-obsolete-owner cleanup controls remain open.
+production deployment replaced the warm Modal application, and on 2026-09-17 the obsolete owner
+CRUD compatibility grant was removed before the deployed status function again succeeded through
+the rotated runtime DSN. See the [dated least-privilege record](neon-role-split-2026-09-15.md).
+Managed backup, alert, and restore controls remain open because the available Neon dashboard
+identity has no access to the production project.
 
 ## P1 — trusted agent execution evidence
 

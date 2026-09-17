@@ -58,9 +58,19 @@ merged `main`; deployment run
 active connection states. The earlier fresh-container probe had already established that this DSN
 authenticates as `denali_runtime` and cannot perform DDL.
 
-The obsolete owner credential and its compatibility grant should be removed only after confirming
-that no older Modal deployment remains callable and the separately governed restore procedure can
-still authenticate with `denali_migration`.
+On 2026-09-17 the temporary compatibility boundary was removed after the protected deployment and
+rotated-runtime checks above. The migration role revoked only the explicit `SELECT`, `INSERT`,
+`UPDATE`, and `DELETE` grants from `neondb_owner` across the 33 application tables. A post-change
+query found zero remaining owner CRUD grants, retained runtime `SELECT` access to all 33 tables,
+and reconfirmed that all application tables remain owned by `denali_migration`. The currently
+deployed `active_connection_status` function then completed through `DENALI_DSN` and returned 21
+connection rows across all seven P0 providers.
+
+The signed-in Neon dashboard identity was also rechecked on 2026-09-17. It has a Neon organization
+but no projects, so it cannot configure or inspect the production project's managed alerts,
+point-in-time recovery, or restore branches. Those controls require a production-project invite or
+a scoped Neon API credential from the project owner; database credentials do not grant control-
+plane access.
 
 ## Result
 
@@ -70,4 +80,5 @@ still authenticate with `denali_migration`.
 - Migration DDL capability: passed
 - Fresh hosted-container verification: passed
 - Production Modal replacement and rotated runtime activation: passed
+- Obsolete owner CRUD compatibility grant removal: passed
 - Neon managed backup/alert/restore controls: not covered by this record

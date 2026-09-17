@@ -54,6 +54,14 @@ session tokens, authorization headers, provider credentials, and provider payloa
 - [ ] Repeat the non-empty switching test using an `org:member` session after the role matrix is
       available.
 
+On 2026-09-17 the Clerk backend was checked for a non-administrator test identity before any
+membership change was attempted. The isolation Organization has one membership and the existing
+Organization has three; every membership is `org:admin`. There is therefore no existing real
+`org:member` session with which to complete the role matrix. Completing this gate requires an
+explicitly authorized temporary role change with guaranteed restoration, or a bounded test member
+created through the normal invitation/user-provisioning path. No administrator access was changed
+during this check.
+
 ## Result
 
 - Real Clerk Organizations and admin switching: passed
