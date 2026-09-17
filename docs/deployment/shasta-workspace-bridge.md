@@ -1,9 +1,10 @@
 # Shasta Google Workspace pilot bridge
 
-Status: corrective code prepared for PR; **not deployed, configured, or provider-accepted**.
-The first deployment of merged PR #58 stopped during image build because its source
-dependency lived in a private repository inaccessible to Modal's builder. The live
-Denali app was not replaced. This correction removes that build-time dependency.
+Status: the self-contained bridge function from PR #61 is deployed. The dedicated
+Secret mount, operator bindings, first collection, and provider acceptance remain
+pending until verified separately. PR #58's first deployment stopped during image
+build because a private dependency was inaccessible to Modal's builder; PR #61
+removed that dependency.
 
 Denali remains the credential owner. The fixed `collect_shasta_pilot_workspace` function
 runs in the existing `denali-production` Modal app, where Google Workload Identity
@@ -16,8 +17,9 @@ token or raw Google response is logged, returned, or copied into a tenant record
 
 ## Operator configuration
 
-After the PR is reviewed and merged, configure these four values in the existing
-Denali production provider Modal Secret, without placing values in the repository,
+After the dedicated Secret mount is reviewed, merged, and deployed, configure these
+four values in the existing `shasta-denali-bridge` Secret in the `denali-prod` Modal
+environment, without placing values in the shared GitHub provider Secret, repository,
 GitHub Actions output, PR, or shell history:
 
 - `DENALI_SHASTA_WORKSPACE_TENANT_ID`: verified Denali tenant UUID owning the
@@ -34,6 +36,12 @@ rotated on both sides together. Use the protected Denali production deployment
 workflow for the exact merged `main` SHA; never `modal run` this function from a
 feature branch, because that creates a temporary app identity rejected by the
 Google workload-identity condition.
+
+Production deployment sets `DENALI_MODAL_SHASTA_BRIDGE_SECRET_NAME` to
+`shasta-denali-bridge`. Only the Shasta Workspace function mounts it, alongside the
+existing core Secret; all other functions retain the GitHub provider Secret. Local
+and development evaluation falls back to the environment-local provider Secret, but
+the bridge is not configured or accepted there.
 
 Once deployed and configured, an authorized operator may invoke the **already
 deployed** function via `python scripts/invoke_shasta_workspace_bridge.py`. This
