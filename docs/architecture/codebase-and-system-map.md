@@ -272,7 +272,8 @@ The web application is deliberately small and centralized:
   `shared-assets.transilience.cloud`. Its product list, destinations, icons, and active-product
   behavior are owned by `transilienceai/shared-components`; do not duplicate that configuration
   in Denali. `App.tsx` mounts the element and `styles.css` reserves its 56px product-rail offset
-  alongside Denali's own navigation.
+  alongside Denali's own navigation while applying Denali's navy, muted, and coral theme through
+  the Web Component's supported CSS custom properties.
 - `App.tsx` owns page composition, shared data loading, drawers, filters, governance controls,
   connection workflows, the provider-neutral Agent Execution Graph, and product presentation.
 - `api.ts` is the typed same-origin `/api/v1/*` client and attaches Clerk session authorization.
