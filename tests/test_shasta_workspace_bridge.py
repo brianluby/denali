@@ -4,7 +4,11 @@ from uuid import uuid4
 
 import pytest
 
-from denali.bridges.shasta_workspace import SHASTA_PILOT_URL, collect_pilot_workspace
+from denali.bridges.shasta_workspace import (
+    SHASTA_PILOT_URL,
+    _safe_google_error,
+    collect_pilot_workspace,
+)
 
 
 def _settings():
@@ -62,3 +66,14 @@ def test_malformed_identity_or_weak_secret_never_collects():
             environment=settings,
             publisher=lambda **_: pytest.fail("Must not publish with a weak secret"),
         )
+
+
+def test_google_diagnostic_returns_only_allowlisted_error_labels():
+    error = RuntimeError("Bearer secret-token unauthorized_client for private account")
+
+    assert _safe_google_error(error) == {
+        "error_type": "RuntimeError",
+        "error_code": "unauthorized_client",
+    }
+    assert "secret-token" not in str(_safe_google_error(error))
+    assert _safe_google_error(RuntimeError("private-only-error"))["error_code"] == "unclassified"

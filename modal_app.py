@@ -475,6 +475,22 @@ def collect_shasta_pilot_workspace() -> dict[str, object]:
 
 @app.function(
     image=image,
+    secrets=shasta_bridge_secrets,
+    timeout=240,
+    retries=0,
+    **_region_options(),
+)
+def diagnose_shasta_pilot_workspace() -> dict[str, object]:
+    """Return only the failing Workspace authorization stage and HTTP statuses."""
+
+    from denali.bridges.shasta_workspace import diagnose_pilot_workspace
+
+    _configure_gcp_oidc()
+    return diagnose_pilot_workspace()
+
+
+@app.function(
+    image=image,
     secrets=runtime_secrets,
     timeout=600,
     **_region_options(),
