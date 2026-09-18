@@ -40,7 +40,9 @@ export DENALI_MODAL_REGION="${DENALI_MODAL_REGION:-us-east}"
 production_modal_origin="${DENALI_PRODUCTION_MODAL_ORIGIN:-https://transilience-denali-prod--denali-production-api.modal.run}"
 production_web_origin="${DENALI_PRODUCTION_WEB_ORIGIN:-https://denali.transilience.cloud}"
 
-modal run --env "${prod_modal_environment}" modal_app.py::configuration_status
+required_configuration_groups="core,aws,azure,entra,gcp,google_workspace,github,azure_repos"
+modal run --env "${prod_modal_environment}" modal_app.py::configuration_status \
+  --required-groups "${required_configuration_groups}"
 modal run --env "${prod_modal_environment}" modal_app.py::migrate_database
 modal run --env "${prod_modal_environment}" modal_app.py::database_status
 modal deploy --env "${prod_modal_environment}" modal_app.py

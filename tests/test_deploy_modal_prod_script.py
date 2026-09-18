@@ -96,6 +96,14 @@ def test_production_deploy_rejects_dirty_worktree(tmp_path: Path) -> None:
     assert not (tmp_path / "calls.log").exists()
 
 
+def test_production_deploy_rejects_non_main_local_branch(tmp_path: Path) -> None:
+    result = _run(tmp_path, "--confirm-production", FAKE_BRANCH="feature")
+
+    assert result.returncode == 2
+    assert "branch other than main" in result.stderr
+    assert not (tmp_path / "calls.log").exists()
+
+
 def test_production_deploy_rejects_stale_actions_revision(tmp_path: Path) -> None:
     result = _run(
         tmp_path,
@@ -125,7 +133,7 @@ def test_production_deploy_rejects_wrong_actions_ref(tmp_path: Path) -> None:
     assert not (tmp_path / "calls.log").exists()
 
 
-def test_production_deploy_runs_checks_migration_deploy_and_smoke_tests(
+def test_production_deploy_runs_p0_check_migration_deploy_and_smoke_tests(
     tmp_path: Path,
 ) -> None:
     result = _run(
@@ -139,7 +147,10 @@ def test_production_deploy_runs_checks_migration_deploy_and_smoke_tests(
     assert result.returncode == 0, result.stderr
     assert f"Production smoke checks passed for commit {SHA}." in result.stdout
     calls = (tmp_path / "calls.log").read_text(encoding="utf-8")
-    assert "modal run --env denali-prod modal_app.py::configuration_status" in calls
+    assert (
+        "modal run --env denali-prod modal_app.py::configuration_status "
+        "--required-groups core,aws,azure,entra,gcp,google_workspace,github,azure_repos"
+    ) in calls
     assert "modal run --env denali-prod modal_app.py::migrate_database" in calls
     assert "modal run --env denali-prod modal_app.py::database_status" in calls
     assert "modal deploy --env denali-prod modal_app.py" in calls

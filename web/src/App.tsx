@@ -2832,6 +2832,7 @@ function ConnectionsPage({
   const [accountId, setAccountId] = useState("");
   const [partition, setPartition] = useState<AwsConnectionCreate["partition"]>("aws");
   const [deploymentRegion, setDeploymentRegion] = useState("us-east-1");
+  const [awsRoleName, setAwsRoleName] = useState("DenaliSecurityAuditRole");
   const [coverageMode, setCoverageMode] = useState<AwsConnectionCreate["coverage_mode"]>("automatic");
   const [regions, setRegions] = useState("us-east-1");
   const [scopes, setScopes] = useState(() => connectionScopes(provider).map((scope) => scope.id));
@@ -2879,6 +2880,7 @@ function ConnectionsPage({
           coverage_mode: coverageMode,
           regions: coverageMode === "selected" ? regions.split(",").map((region) => region.trim()).filter(Boolean) : [],
           declared_scopes: scopes,
+          role_name: awsRoleName,
         } : provider === "azure" ? {
           provider: "azure",
           display_name: displayName,
@@ -2917,6 +2919,7 @@ function ConnectionsPage({
       setActionNotice(`${created.display_name} onboarding plan created. Continue with the provider setup steps below.`);
       setDisplayName("");
       setAccountId("");
+      setAwsRoleName("DenaliSecurityAuditRole");
       setAzureTenantId("");
       setAzureReposTenantId("");
       setAzureReposOrganization("");
@@ -3367,6 +3370,7 @@ function ConnectionsPage({
         <label><span>Connection name</span><input required maxLength={120} value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder={`Production ${CONNECTION_PROVIDER_LABELS[provider]}`} /></label>
         {provider === "aws" ? <>
         <label><span>AWS account ID</span><input required inputMode="numeric" pattern="[0-9]{12}" maxLength={12} value={accountId} onChange={(event) => setAccountId(event.target.value)} placeholder="123456789012" /></label>
+        <label><span>IAM role name</span><input required pattern="[A-Za-z0-9+=,.@_-]+" maxLength={64} value={awsRoleName} onChange={(event) => setAwsRoleName(event.target.value)} placeholder="DenaliSecurityAuditRole" /><small>Use a unique role name when connecting the same AWS account more than once.</small></label>
         <label><span>Partition</span><select value={partition} onChange={(event) => setPartition(event.target.value as AwsConnectionCreate["partition"])}><option value="aws">Commercial AWS</option><option value="aws-us-gov">AWS GovCloud</option><option value="aws-cn">AWS China</option></select></label>
         <label><span>Preferred CloudFormation stack location</span><input required value={deploymentRegion} onChange={(event) => setDeploymentRegion(event.target.value)} placeholder="us-east-1" /><small>This plans where the stack is managed; it does not limit inventory coverage.</small></label>
         <label><span>Inventory region coverage</span><select value={coverageMode} onChange={(event) => setCoverageMode(event.target.value as AwsConnectionCreate["coverage_mode"])}><option value="automatic">All enabled regions (recommended)</option><option value="selected">Selected regions only</option></select><small>Automatic mode rediscovers enabled and opted-in regions on every validation.</small></label>
