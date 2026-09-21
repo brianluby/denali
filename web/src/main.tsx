@@ -14,8 +14,10 @@ import { sanitizeAnalyticsEvent } from "./analytics";
 import { api, configureApiTokenProvider, type DenaliContext } from "./api";
 import ProfilePage from "./ProfilePage";
 import "./styles.css";
+import { initializeTheme } from "./theme";
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim();
+initializeTheme();
 
 function HostedDenali() {
   const { getToken, isLoaded, isSignedIn, orgId } = useAuth();
