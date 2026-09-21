@@ -29,6 +29,15 @@ test("Denali foundations consume mapped tokens and Inter", () => {
   assert.doesNotMatch(styles, /DM Sans|Manrope|IBM Plex Sans/);
 });
 
+test("connection evidence states use theme-aware role surfaces", () => {
+  assert.match(styles, /\.validation-summary \{[\s\S]*?background: var\(--color-role-status-low-subtle\)/);
+  assert.match(styles, /\.validation-summary\.partial \{[\s\S]*?background: var\(--color-role-status-medium-subtle\)/);
+  assert.match(styles, /\.validation-summary\.unhealthy \{[\s\S]*?background: var\(--color-role-status-critical-subtle\)/);
+  assert.match(styles, /\.validation-grid > div,[\s\S]*?background: var\(--color-role-surface-container-default\)/);
+  assert.match(styles, /\.validation-grid > div\.not_applicable \{[\s\S]*?background: var\(--color-role-surface-component-subtle\)/);
+  assert.match(styles, /\.region-discovery \{[\s\S]*?background: var\(--color-role-status-low-subtle\)/);
+});
+
 test("ships Denali's favicon from the public root", () => {
   assert.match(index, /<link rel="icon" href="\/favicon\.ico" sizes="any" \/>/);
   assert.ok(favicon.byteLength > 0);

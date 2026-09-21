@@ -1241,6 +1241,237 @@ textarea::placeholder { color: var(--color-role-text-content-placeholder); }
 }
 .connection-field-lock-note { background: var(--color-role-surface-component-subtle); color: var(--color-role-text-content-subtle) !important; }
 
+/* Connection evidence and setup states must retain contrast in either theme. */
+.connection-error,
+.connection-consent-return.failed,
+.connection-copy-button.error {
+  border-color: var(--color-role-status-critical-border-focus);
+  background: var(--color-role-status-critical-subtle);
+  color: var(--color-role-status-critical-foreground);
+}
+.connection-notice,
+.connection-consent-return:not(.failed),
+.azure-subscriptions {
+  border-color: var(--color-role-status-low-border-focus);
+  background: var(--color-role-status-low-subtle);
+  color: var(--color-role-status-low-foreground);
+}
+.connection-consent-return strong,
+.azure-subscriptions strong { color: var(--color-role-text-content-heading); }
+.connection-consent-return small,
+.azure-subscriptions code { color: var(--color-role-text-content-subtle); }
+.microsoft-account-guidance {
+  border-color: var(--color-role-info-border-focus);
+  background: var(--color-role-info-subtle);
+  color: var(--color-role-info-foreground);
+}
+.microsoft-account-guidance strong { color: var(--color-role-text-content-heading); }
+.microsoft-account-guidance small { color: var(--color-role-text-content-subtle); }
+.connection-submit-status,
+.connection-inline-progress {
+  border-color: var(--color-role-status-high-border-focus);
+  background: var(--color-role-status-high-subtle);
+  color: var(--color-role-status-high-foreground) !important;
+}
+.connection-submit-status strong,
+.connection-submit-status small { color: var(--color-role-text-content-body); }
+.connection-background-status.delayed {
+  border-color: var(--color-role-status-medium-border-focus);
+  background: var(--color-role-status-medium-subtle);
+}
+.connection-operation-status {
+  border-color: var(--color-role-status-high-border-focus);
+  background: var(--color-role-status-high-subtle);
+}
+.connection-operation-status.collecting {
+  border-color: var(--color-role-status-low-border-focus);
+  background: var(--color-role-status-low-subtle);
+}
+.connection-operation-status.preparing {
+  border-color: var(--color-role-info-border-focus);
+  background: var(--color-role-info-subtle);
+}
+.connection-operation-copy > span { color: var(--color-role-status-high-foreground); }
+.connection-operation-status.collecting .connection-operation-copy > span { color: var(--color-role-status-low-foreground); }
+.connection-operation-status.preparing .connection-operation-copy > span { color: var(--color-role-info-foreground); }
+.connection-operation-copy > strong,
+.connection-operation-copy > small { color: var(--color-role-text-content-body); }
+.connection-operation-copy li {
+  border-color: var(--color-role-border-subtle);
+  background: var(--color-role-surface-component-default);
+  color: var(--color-role-text-content-muted);
+}
+.connection-operation-copy li.complete {
+  border-color: var(--color-role-status-low-border-focus);
+  color: var(--color-role-status-low-foreground);
+}
+.connection-operation-copy li.current {
+  border-color: var(--color-role-status-high-border-focus);
+  color: var(--color-role-status-high-foreground);
+}
+.connection-operation-status.collecting .connection-operation-copy li.current {
+  border-color: var(--color-role-status-low-border-focus);
+  color: var(--color-role-status-low-foreground);
+}
+.connection-operation-copy li.attention {
+  border-color: var(--color-role-status-medium-border-focus);
+  color: var(--color-role-status-medium-foreground);
+}
+.connection-background-phase {
+  background: var(--color-role-status-high-subtle);
+  color: var(--color-role-status-high-foreground);
+}
+.connection-background-status > p { color: var(--color-role-status-medium-foreground); }
+.connection-health {
+  background: var(--color-role-surface-component-subtle);
+  color: var(--color-role-text-content-muted);
+}
+.connection-health.healthy {
+  background: var(--color-role-status-low-subtle);
+  color: var(--color-role-status-low-foreground);
+}
+.connection-health.partial,
+.connection-health.unknown {
+  background: var(--color-role-status-medium-subtle);
+  color: var(--color-role-status-medium-foreground);
+}
+.connection-health.unhealthy {
+  background: var(--color-role-status-critical-subtle);
+  color: var(--color-role-status-critical-foreground);
+}
+.connection-health.disabled {
+  background: var(--color-role-surface-component-disabled);
+  color: var(--color-role-foreground-disabled);
+}
+.connection-copy-button.copied {
+  border-color: var(--color-role-status-low-border-focus);
+  background: var(--color-role-status-low-subtle);
+  color: var(--color-role-status-low-foreground);
+}
+.connection-copy-feedback.copied { color: var(--color-role-status-low-foreground); }
+.connection-copy-feedback.error { color: var(--color-role-status-critical-foreground); }
+.validation-progress-note,
+.launch-record,
+.connection-setup-guidance { color: var(--color-role-text-content-subtle) !important; }
+
+.validation-summary {
+  border: 1px solid var(--color-role-status-low-border-focus);
+  background: var(--color-role-status-low-subtle);
+  color: var(--color-role-text-content-body);
+}
+.validation-summary.partial {
+  border-color: var(--color-role-status-medium-border-focus);
+  background: var(--color-role-status-medium-subtle);
+}
+.validation-summary.unhealthy {
+  border-color: var(--color-role-status-critical-border-focus);
+  background: var(--color-role-status-critical-subtle);
+}
+.validation-summary strong { color: var(--color-role-text-content-heading); }
+.validation-summary small { color: var(--color-role-text-content-subtle); }
+.region-discovery {
+  border-color: var(--color-role-status-low-border-focus);
+  background: var(--color-role-status-low-subtle);
+  color: var(--color-role-text-content-body);
+}
+.region-discovery.failed {
+  border-color: var(--color-role-status-critical-border-focus);
+  background: var(--color-role-status-critical-subtle);
+}
+.region-discovery.unknown {
+  border-color: var(--color-role-status-medium-border-focus);
+  background: var(--color-role-status-medium-subtle);
+}
+.region-discovery strong { color: var(--color-role-text-content-heading); }
+.region-discovery p,
+.region-discovery small { color: var(--color-role-text-content-subtle); }
+.region-discovery > span { color: var(--color-role-status-low-foreground); }
+.region-discovery.failed > span { color: var(--color-role-status-critical-foreground); }
+.region-discovery.unknown > span { color: var(--color-role-status-medium-foreground); }
+.validation-grid > div,
+.validation-plane-rollup > div,
+.github-plane-results > div {
+  border-color: var(--color-role-border-subtle);
+  background: var(--color-role-surface-container-default);
+  color: var(--color-role-text-content-body);
+}
+.validation-grid > div.not_applicable {
+  background: var(--color-role-surface-component-subtle);
+}
+.validation-grid > div > span,
+.validation-grid > div.not_applicable > span { color: var(--color-role-icon-content-muted); }
+.validation-grid > div.passed > span { color: var(--color-role-status-low-foreground); }
+.validation-grid > div.failed > span { color: var(--color-role-status-critical-foreground); }
+.validation-grid strong,
+.validation-plane-rollup strong,
+.github-plane-results strong { color: var(--color-role-text-content-heading); }
+.validation-grid small,
+.validation-grid p,
+.validation-plane-rollup small,
+.rollup-counts b,
+.github-plane-results small,
+.github-plane-results p { color: var(--color-role-text-content-subtle); }
+.validation-plane-rollup > div > span,
+.rollup-counts .passed,
+.github-plane-results > div.passed > span { color: var(--color-role-status-low-foreground); }
+.validation-plane-rollup > div.attention > span,
+.rollup-counts .failed,
+.github-plane-results > div.failed > span,
+.github-plane-results > div.unknown > span { color: var(--color-role-status-critical-foreground); }
+.plane-validation-results {
+  border-color: var(--color-role-border-subtle);
+  background: var(--color-role-surface-container-default);
+}
+.plane-validation-results > summary {
+  background: var(--color-role-surface-component-subtle);
+  color: var(--color-role-text-content-body);
+}
+.connection-unknown {
+  background: var(--color-role-surface-component-subtle);
+  color: var(--color-role-icon-content-muted);
+}
+.connection-unknown strong { color: var(--color-role-text-content-heading); }
+.connection-unknown small { color: var(--color-role-text-content-subtle); }
+
+.github-validation-overview > div {
+  border-color: var(--color-role-border-subtle);
+  background: var(--color-role-surface-container-default);
+  color: var(--color-role-text-content-body);
+}
+.github-validation-overview > div.passed {
+  border-color: var(--color-role-status-low-border-focus);
+  background: var(--color-role-status-low-subtle);
+}
+.github-validation-overview > div.attention {
+  border-color: var(--color-role-status-critical-border-focus);
+  background: var(--color-role-status-critical-subtle);
+}
+.github-validation-overview small,
+.github-validation-overview span { color: var(--color-role-text-content-subtle); }
+.github-repository-validation.attention {
+  border-color: var(--color-role-status-critical-border-focus);
+}
+.github-repository-validation.attention > summary {
+  background: var(--color-role-status-critical-subtle);
+}
+.github-repository-validation > summary code,
+.github-plane-statuses em { color: var(--color-role-text-content-subtle); }
+.github-repository-counts b.passed { color: var(--color-role-status-low-foreground); }
+.github-repository-counts b.attention,
+.github-repository-counts > b { color: var(--color-role-status-critical-foreground); }
+.github-plane-statuses i {
+  background: var(--color-role-status-low-subtle);
+  color: var(--color-role-status-low-foreground);
+}
+.github-plane-statuses i.not_applicable {
+  background: var(--color-role-surface-component-subtle);
+  color: var(--color-role-text-content-muted);
+}
+.connection-permissions code {
+  background: var(--color-role-surface-component-subtle);
+  color: var(--color-role-text-content-subtle);
+}
+
 .brand-mark,
 .profile-photo-control > button { background: var(--brand-gradient); }
 .composition-bar i { background: var(--brand-gradient); }
