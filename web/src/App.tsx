@@ -28,6 +28,7 @@ import {
   ListFilter,
   Menu,
   MessageSquareText,
+  Moon,
   Mountain,
   Network,
   PanelLeftClose,
@@ -40,6 +41,7 @@ import {
   ServerCog,
   ShieldCheck,
   Sparkles,
+  Sun,
   Trash2,
   UserRound,
   Waypoints,
@@ -81,6 +83,7 @@ import {
   type Page,
 } from "./navigation";
 import { applicableDetectionEvaluations, inventoryEvidenceSummary } from "./presentation";
+import { applyTheme, currentTheme, nextTheme, type Theme } from "./theme";
 import type {
   Asset,
   AssetDetail,
@@ -310,6 +313,11 @@ function App({ canWrite = true, accountControls, profilePage }: { canWrite?: boo
   const [connectionMonitorError, setConnectionMonitorError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
+  const [theme, setTheme] = useState<Theme>(currentTheme);
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     const initial = navigationFromUrl(window.location.href);
@@ -612,7 +620,14 @@ function App({ canWrite = true, accountControls, profilePage }: { canWrite?: boo
       {sidebarOpen && <button className="sidebar-scrim" aria-label="Close menu" onClick={() => setSidebarOpen(false)} />}
 
       <main className="main-shell">
-        <Topbar page={page} onMenu={() => setSidebarOpen(true)} onRefresh={loadAll} accountControls={accountControls} />
+        <Topbar
+          page={page}
+          theme={theme}
+          onMenu={() => setSidebarOpen(true)}
+          onRefresh={loadAll}
+          onToggleTheme={() => setTheme((value) => nextTheme(value))}
+          accountControls={accountControls}
+        />
         <div className="workspace">
           {(visibleRunningOperations.length > 0 || connectionMonitorError) && <ConnectionBackgroundStatus
             operations={visibleRunningOperations}
@@ -873,7 +888,21 @@ function NavButton({
   );
 }
 
-function Topbar({ page, onMenu, onRefresh, accountControls }: { page: Page; onMenu: () => void; onRefresh: () => void; accountControls?: ReactNode }) {
+function Topbar({
+  page,
+  theme,
+  onMenu,
+  onRefresh,
+  onToggleTheme,
+  accountControls,
+}: {
+  page: Page;
+  theme: Theme;
+  onMenu: () => void;
+  onRefresh: () => void;
+  onToggleTheme: () => void;
+  accountControls?: ReactNode;
+}) {
   const titles: Record<Page, { eyebrow: string; title: string }> = {
     dashboard: { eyebrow: "Command center", title: "Denali Brief" },
     connections: { eyebrow: "Setup", title: "Connections" },
@@ -894,6 +923,15 @@ function Topbar({ page, onMenu, onRefresh, accountControls }: { page: Page; onMe
       <button className="mobile-menu" onClick={onMenu} aria-label="Open menu"><Menu /></button>
       <div><span>{content.eyebrow}</span><h1>{content.title}</h1></div>
       <div className="topbar-actions">
+        <button
+          className="icon-button theme-toggle"
+          title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+          aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+          aria-pressed={theme === "dark"}
+          onClick={onToggleTheme}
+        >
+          {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+        </button>
         <button className="icon-button" title="Refresh data" onClick={() => void onRefresh()}><RefreshCw size={17} /></button>
         <div className="environment"><span /> Evidence current</div>
         <div className="edition-badge">Community</div>

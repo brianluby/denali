@@ -34,6 +34,8 @@
 }
 
 * { box-sizing: border-box; }
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
 body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--color-role-surface-page-default); color: var(--color-role-text-content-body); }
 button, input, select, textarea { font: inherit; }
 button { color: inherit; }
@@ -88,6 +90,8 @@ app-sidebar {
 .identity-control { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }.identity-control > span { color: #778496; font-size: 8px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
 .icon-button, .mobile-menu { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: #fff; display: grid; place-items: center; cursor: pointer; }
 .icon-button:hover { border-color: #bdc6cf; background: #f8fafb; }
+.theme-toggle svg { transition: transform .2s ease; }
+.theme-toggle:hover svg { transform: rotate(-10deg); }
 .environment { height: 38px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; display: flex; align-items: center; gap: 8px; color: #48566a; font-size: 12px; font-weight: 600; }
 .environment span { width: 7px; height: 7px; border-radius: 50%; background: #42a475; box-shadow: 0 0 0 3px #e4f4eb; }
 .avatar { width: 38px; height: 38px; border-radius: 50%; border: 0; background: #172337; color: #fff; font-weight: 700; font-size: 11px; }
@@ -731,6 +735,10 @@ small { color: var(--color-role-text-content-muted); }
 .profile-inline-loading,
 .profile-empty { color: var(--color-role-text-content-heading); }
 
+.hero-panel h2,
+.denali-brief h3,
+.profile-hero h2 { color: var(--color-role-foreground-on-color); }
+
 .state-page h2 { font-weight: var(--font-weight-semibold); }
 
 .topbar h1,
@@ -760,6 +768,10 @@ small { color: var(--color-role-text-content-muted); }
 .metric-card,
 .finding-metric,
 .vulnerability-metric,
+.runtime-metric,
+.shadow-signal,
+.issue-signal-card,
+.lineage-metric,
 .profile-card,
 .profile-stat,
 .connection-detail,
@@ -773,6 +785,12 @@ small { color: var(--color-role-text-content-muted); }
   box-shadow: var(--shadow-200);
 }
 
+.lineage-metric-icon.repository,
+.asset-icon.slate {
+  background: var(--color-role-surface-component-subtle);
+  color: var(--color-role-icon-content-default);
+}
+
 .metric-card:hover,
 .panel button:hover,
 .profile-data-row:hover,
@@ -781,7 +799,12 @@ small { color: var(--color-role-text-content-muted); }
 .inventory-table-row:hover,
 .component-table-row:hover,
 .findings-table-row:hover,
-.vulnerabilities-table-row:hover {
+.vulnerabilities-table-row:hover,
+.issues-table-row:hover,
+.runtime-session-row:hover,
+.runtime-table-row:hover,
+.detections-table-row:hover,
+.shadow-app-row:hover {
   border-color: var(--color-role-border-hover);
   background: var(--color-role-surface-container-hover);
 }
@@ -879,6 +902,11 @@ textarea::placeholder { color: var(--color-role-text-content-placeholder); }
 .component-table-head,
 .findings-table-head,
 .vulnerabilities-table-head,
+.issues-table-head,
+.runtime-session-table-head,
+.runtime-table-head,
+.detections-table-head,
+.shadow-app-head,
 .profile-signout-row,
 .connection-safeguards,
 .profile-photo-row,
@@ -893,6 +921,11 @@ textarea::placeholder { color: var(--color-role-text-content-placeholder); }
 .component-table-row,
 .findings-table-row,
 .vulnerabilities-table-row,
+.issues-table-row,
+.runtime-session-row,
+.runtime-table-row,
+.detections-table-row,
+.shadow-app-row,
 .drawer-header,
 .drawer-actions,
 .drawer-tabs,
@@ -933,9 +966,180 @@ textarea::placeholder { color: var(--color-role-text-content-placeholder); }
 .evidence-rail-actions button:hover { background: var(--color-role-surface-container-hover); }
 .evidence-boundary-item strong { color: var(--color-role-text-content-heading); }
 
+.vulnerability-automation-note,
+.shadow-principle,
+.runtime-response-boundary,
+.lineage-trust-banner,
+.artifact-findings-head,
+.artifact-vulnerabilities-head,
+.provenance-callout {
+  border-color: var(--color-role-status-low-border-focus);
+  background: var(--color-role-status-low-subtle);
+  color: var(--color-role-status-low-foreground);
+}
+.shadow-principle span,
+.lineage-trust-banner p,
+.artifact-findings-head span,
+.artifact-vulnerabilities-head span,
+.provenance-callout span,
+.runtime-response-boundary small { color: var(--color-role-text-content-subtle); }
+
+.runtime-fixture-callout,
+.issue-coverage-banner.unknown,
+.issue-coverage-banner.partial,
+.issue-coverage-banner.failed,
+.lineage-trust-banner.attention,
+.provenance-callout.unknown,
+.provenance-callout.unattested,
+.repository-findings-head,
+.artifact-vulnerabilities.not_matched .artifact-vulnerabilities-head,
+.artifact-vulnerabilities.not_evaluated .artifact-vulnerabilities-head {
+  border-color: var(--color-role-status-medium-border-focus);
+  background: var(--color-role-status-medium-subtle);
+  color: var(--color-role-status-medium-foreground);
+}
+.runtime-fixture-callout strong,
+.runtime-fixture-callout small { color: var(--color-role-text-content-body); }
+.runtime-fixture-callout button {
+  border-color: var(--color-role-border-subtle);
+  background: var(--color-role-surface-component-default);
+  color: var(--color-role-text-content-body);
+}
+.issue-coverage-banner:not(.unknown):not(.partial):not(.failed) {
+  border-color: var(--color-role-status-low-border-focus);
+  background: var(--color-role-status-low-subtle);
+  color: var(--color-role-status-low-foreground);
+}
+.issue-coverage-banner span,
+.issue-coverage-banner > small { color: var(--color-role-text-content-subtle); }
+
+.detection-coverage-card {
+  border-color: var(--color-role-status-medium-border-focus);
+  background: var(--color-role-status-medium-subtle);
+}
+.detection-coverage-card.complete {
+  border-color: var(--color-role-status-low-border-focus);
+  background: var(--color-role-status-low-subtle);
+}
+.detection-coverage-card.failed {
+  border-color: var(--color-role-status-critical-border-focus);
+  background: var(--color-role-status-critical-subtle);
+}
+.detection-coverage-card small,
+.detection-coverage-card p { color: var(--color-role-text-content-subtle); }
+
+.severity-critical .severity-mark,
+.finding-icon.severity-critical,
+.vulnerability-metric.critical > span,
+.runtime-metric.failures > span,
+.detection-coverage-card.failed .detection-coverage-icon,
+.detection-coverage-card.failed .detection-coverage-state {
+  background: var(--color-role-status-critical-subtle);
+  color: var(--color-role-status-critical-foreground);
+}
+.severity-high .severity-mark,
+.finding-icon.severity-high,
+.vulnerability-metric.high > span {
+  background: var(--color-role-status-high-subtle);
+  color: var(--color-role-status-high-foreground);
+}
+.severity-medium .severity-mark,
+.finding-icon.severity-medium {
+  background: var(--color-role-status-medium-subtle);
+  color: var(--color-role-status-medium-foreground);
+}
+.severity-low .severity-mark,
+.finding-icon.severity-low,
+.vulnerability-metric.fixable > span,
+.detection-coverage-card.complete .detection-coverage-icon,
+.detection-coverage-card.complete .detection-coverage-state {
+  background: var(--color-role-status-low-subtle);
+  color: var(--color-role-status-low-foreground);
+}
+
+.issue-state.open {
+  background: var(--color-role-status-critical-subtle);
+  color: var(--color-role-status-critical-foreground);
+}
+.issue-state.resolved {
+  background: var(--color-role-status-low-subtle);
+  color: var(--color-role-status-low-foreground);
+}
+.issue-state.unknown {
+  background: var(--color-role-status-medium-subtle);
+  color: var(--color-role-status-medium-foreground);
+}
+
+.lineage-flow,
+.issue-path-graph {
+  border-color: var(--color-role-border-subtle);
+  background-color: var(--color-role-surface-component-subtle);
+  background-image: radial-gradient(var(--color-role-border-subtle) 1px, transparent 1px);
+}
+.lineage-node,
+.issue-graph-node,
+.declared-action,
+.declared-action-target {
+  border-color: var(--color-role-border-subtle);
+  background: var(--color-role-surface-component-default);
+  color: var(--color-role-text-content-body);
+}
+.declared-action-surface {
+  border-color: var(--color-role-border-subtle);
+  background: var(--color-role-surface-container-subtle);
+}
+
 .profile-tabs { border-color: var(--color-role-border-subtle); background: var(--color-role-surface-component-subtle); }
 .profile-tabs button { color: var(--color-role-text-content-muted); font-weight: var(--font-weight-medium); }
 .profile-tabs button.active { background: var(--color-role-surface-container-default); color: var(--color-role-text-content-heading); box-shadow: var(--shadow-100); }
+
+.edition-badge,
+.environment,
+.golden-path-head > button,
+.golden-path-app {
+  border-color: var(--color-role-border-subtle);
+  background: var(--color-role-surface-component-default);
+  color: var(--color-role-text-content-body);
+}
+.brief-freshness strong,
+.golden-path-proof strong { color: var(--color-role-text-content-heading); }
+.golden-path-copy code,
+.golden-path-runtime em,
+.golden-path-proof span { color: var(--color-role-text-content-subtle); }
+.evidence-health.complete {
+  background: var(--color-role-status-low-subtle);
+  color: var(--color-role-status-low-foreground);
+}
+.evidence-health.attention {
+  background: var(--color-role-status-medium-subtle);
+  color: var(--color-role-status-medium-foreground);
+}
+.evidence-health small { color: var(--color-role-text-content-subtle); }
+
+.state-badge.failed,
+.severity-badge.critical,
+.finding-state.open,
+.fix-badge.not_fixed,
+.fix-badge.wont_fix,
+.outcome-badge.failure,
+.github-plane-statuses i.failed,
+.github-plane-statuses i.unknown {
+  background: var(--color-role-status-critical-subtle);
+  color: var(--color-role-status-critical-foreground);
+}
+.state-badge.partial,
+.severity-badge.medium,
+.detection-coverage-state {
+  background: var(--color-role-status-medium-subtle);
+  color: var(--color-role-status-medium-foreground);
+}
+.state-badge.complete,
+.finding-state.resolved,
+.fix-badge.fixed,
+.outcome-badge.success {
+  background: var(--color-role-status-low-subtle);
+  color: var(--color-role-status-low-foreground);
+}
 
 .inventory-categories button {
   border-color: var(--color-role-border-subtle);
