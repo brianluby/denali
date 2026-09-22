@@ -268,12 +268,11 @@ same observation. Name similarity and trace proximity are insufficient.
 The web application is deliberately small and centralized:
 
 - `main.tsx` initializes Clerk when configured and mounts the application.
-- `index.html` loads the centrally hosted `app-sidebar` Web Component from
-  `shared-assets.transilience.cloud`. Its product list, destinations, icons, and active-product
-  behavior are owned by `transilienceai/shared-components`; do not duplicate that configuration
-  in Denali. `App.tsx` mounts the element and `styles.css` reserves its 56px product-rail offset
-  alongside Denali's own navigation while applying Transilience theme-aware page-surface and
-  brand-role tokens through the Web Component's supported CSS custom properties.
+- The shared `app-sidebar` app switcher is temporarily paused. Its script in `index.html` and
+  mount in `App.tsx` are commented out, and `styles.css` sets its product-rail offset to zero.
+  To restore it, re-enable both comments and the 56px rail together. Its product list,
+  destinations, icons, and active-product behavior remain owned by
+  `transilienceai/shared-components`; do not duplicate that configuration in Denali.
 - `App.tsx` owns page composition, shared data loading, drawers, filters, governance controls,
   connection workflows, the provider-neutral Agent Execution Graph, and product presentation.
 - `api.ts` is the typed same-origin `/api/v1/*` client and attaches Clerk session authorization.
