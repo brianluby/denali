@@ -48,7 +48,8 @@ button { color: inherit; }
 button, a, input, select, textarea { outline-color: var(--color-role-border-focus); }
 :focus-visible { outline: 2px solid var(--color-role-border-focus); outline-offset: 2px; }
 
-.app-shell { --product-sidebar-width: 56px; min-height: 100vh; display: flex; }
+/* Shared app switcher paused; restore this rail to 56px when the component returns. */
+.app-shell { --product-sidebar-width: 0px; min-height: 100vh; display: flex; }
 app-sidebar {
   --app-sidebar-bg: var(--navy);
   --app-sidebar-fg: var(--color-role-icon-content-muted);

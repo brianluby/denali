@@ -49,7 +49,7 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-import { createElement, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api } from "./api";
 import {
   completedRunningConnectionIds,
@@ -615,7 +615,7 @@ function App({ canWrite = true, accountControls, profilePage }: { canWrite?: boo
 
   return (
     <div className="app-shell">
-      {createElement("app-sidebar")}
+      {/* Shared app switcher paused; restore with the index.html script and CSS rail width. */}
       <Sidebar page={page} onNavigate={navigate} open={sidebarOpen} />
       {sidebarOpen && <button className="sidebar-scrim" aria-label="Close menu" onClick={() => setSidebarOpen(false)} />}
 
